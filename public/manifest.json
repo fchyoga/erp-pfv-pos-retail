@@ -1,0 +1,16 @@
+{
+  "name": "PFV POS Retail",
+  "short_name": "PFV POS",
+  "description": "Point of Sale for Provit Farm Village",
+  "start_url": "/pos",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#16a34a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

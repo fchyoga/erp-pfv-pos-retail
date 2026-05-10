@@ -1,9 +1,15 @@
-<div class="flex h-full w-full">
+<div x-data="posApp(@js($products->keyBy('id')))" class="flex h-full w-full relative">
     
+    <!-- Offline Indicator -->
+    <div x-show="isOffline" style="display: none;" class="absolute top-0 left-0 right-0 bg-orange-500 text-white text-center py-1 text-sm font-bold z-50">
+        ANDA SEDANG OFFLINE. Transaksi akan disimpan sementara di perangkat.
+        <span x-show="syncQueue.length > 0" class="ml-2 bg-white text-orange-600 px-2 rounded-full text-xs" x-text="syncQueue.length + ' Menunggu Sync'"></span>
+    </div>
+
     <!-- Left Panel: Products Grid -->
-    <div class="flex-1 flex flex-col bg-gray-50 h-full border-r border-gray-200">
+    <div class="flex-1 flex flex-col bg-gray-50 h-full border-r border-gray-200 mt-6 left-panel-ui">
         
-        <!-- Search & Category Filter -->
+        <!-- Search & Category Filter (Livewire still handles search, but we just re-render grid) -->
         <div class="p-4 bg-white shadow-sm flex gap-3 z-10">
             <div class="relative flex-1">
                 <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
@@ -24,7 +30,7 @@
             @if(count($products) > 0)
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     @foreach($products as $product)
-                        <div wire:click="addToCart({{ $product->id }})" class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col h-full overflow-hidden active:scale-95 group">
+                        <div @click="addToCart({{ $product->id }})" class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md cursor-pointer transition flex flex-col h-full overflow-hidden active:scale-95 group">
                             <div class="h-32 bg-gray-100 flex items-center justify-center relative">
                                 @if($product->photo)
                                     <img src="{{ Storage::url($product->photo) }}" class="object-cover h-full w-full" alt="{{ $product->name }}">
@@ -37,7 +43,6 @@
                                 <h3 class="text-sm font-semibold text-gray-800 leading-tight mb-1 flex-1">{{ $product->name }}</h3>
                                 <div class="flex items-end justify-between mt-2">
                                     <span class="text-primary-600 font-bold text-sm">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
-                                    <!-- Stock info could go here -->
                                 </div>
                             </div>
                         </div>
@@ -47,89 +52,88 @@
                 <div class="flex flex-col items-center justify-center h-full text-gray-400">
                     <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                     <p class="text-lg font-medium">Belum ada produk.</p>
-                    <p class="text-sm mt-1">Silakan tambahkan di Backoffice.</p>
                 </div>
             @endif
         </div>
     </div>
 
     <!-- Right Panel: Cart -->
-    <div class="w-96 bg-white flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20">
+    <div class="w-96 bg-white flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20 mt-6 right-panel-ui">
         
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
             <h2 class="font-bold text-gray-800 flex items-center gap-2">
                 <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 Pesanan
             </h2>
-            <button wire:click="clearCart" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition">
+            <button @click="clearCart" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition">
                 Kosongkan
             </button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-2">
-            @if(count($cart) > 0)
+            <template x-if="cart.length > 0">
                 <div class="space-y-2">
-                    @foreach($cart as $index => $item)
+                    <template x-for="(item, index) in cart" :key="index">
                         <div class="bg-white border border-gray-100 p-3 rounded-lg shadow-sm flex flex-col gap-2 relative group">
                             
-                            <!-- Delete button -->
-                            <button wire:click="removeFromCart({{ $index }})" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
+                            <button @click="removeFromCart(index)" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
 
                             <div>
-                                <h4 class="text-sm font-semibold text-gray-800 pr-5">{{ $item['name'] }}</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">Rp {{ number_format($item['price'], 0, ',', '.') }}</p>
+                                <h4 class="text-sm font-semibold text-gray-800 pr-5" x-text="item.name"></h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Rp <span x-text="formatCurrency(item.price)"></span></p>
                             </div>
                             
                             <div class="flex items-center justify-between mt-1">
                                 <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded p-0.5">
-                                    <button wire:click="updateQty({{ $index }}, -1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
+                                    <button @click="updateQty(index, -1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
                                     </button>
-                                    <input type="number" wire:model.live="cart.{{ $index }}.qty" class="w-10 text-center text-sm font-semibold bg-transparent border-none focus:ring-0 p-0" min="1">
-                                    <button wire:click="updateQty({{ $index }}, 1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
+                                    <input type="number" x-model="item.qty" class="w-10 text-center text-sm font-semibold bg-transparent border-none focus:ring-0 p-0" min="1">
+                                    <button @click="updateQty(index, 1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
                                     </button>
                                 </div>
-                                <span class="font-bold text-primary-600 text-sm">Rp {{ number_format($item['price'] * $item['qty'], 0, ',', '.') }}</span>
+                                <span class="font-bold text-primary-600 text-sm">Rp <span x-text="formatCurrency(item.price * item.qty)"></span></span>
                             </div>
                         </div>
-                    @endforeach
+                    </template>
                 </div>
-            @else
+            </template>
+            <template x-if="cart.length === 0">
                 <div class="flex flex-col items-center justify-center h-full text-gray-300">
                     <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     <p class="text-sm">Keranjang masih kosong</p>
                 </div>
-            @endif
+            </template>
         </div>
 
         <!-- Checkout Summary -->
         <div class="bg-gray-50 border-t border-gray-200 p-4 pb-6">
             <div class="flex justify-between items-center mb-2 text-sm text-gray-600">
                 <span>Subtotal</span>
-                <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                <span>Rp <span x-text="formatCurrency(subtotal)"></span></span>
             </div>
             <div class="flex justify-between items-center mb-4 text-sm text-gray-600">
                 <span>Pajak (11%)</span>
-                <span>Rp {{ number_format($tax, 0, ',', '.') }}</span>
+                <span>Rp <span x-text="formatCurrency(tax)"></span></span>
             </div>
             
             <div class="flex justify-between items-center mb-6">
                 <span class="font-bold text-lg text-gray-800">Total</span>
-                <span class="font-bold text-2xl text-primary-600">Rp {{ number_format($total, 0, ',', '.') }}</span>
+                <span class="font-bold text-2xl text-primary-600">Rp <span x-text="formatCurrency(total)"></span></span>
             </div>
 
-            <button wire:click="checkout" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-primary-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed" @if(count($cart) === 0) disabled @endif>
+            <button @click="checkout" :disabled="cart.length === 0" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-primary-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 BAYAR SEKARANG
             </button>
             <div class="grid grid-cols-2 gap-2 mt-3">
-                <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
-                    Hold Bill
+                <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm disabled:opacity-50" :disabled="syncQueue.length === 0" @click="processSyncQueue">
+                    Sync <span x-show="syncQueue.length > 0" x-text="'(' + syncQueue.length + ')'"></span>
                 </button>
-                <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
+                <button onclick="window.print()" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
                     Print Bill
                 </button>
             </div>
@@ -144,7 +148,7 @@
         </div>
     </div>
 
-    <!-- Modal Open Shift -->
+    <!-- Modals code unchanged, appended below -->
     @if($showOpenShiftModal)
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -165,7 +169,6 @@
     </div>
     @endif
 
-    <!-- Modal Close Shift -->
     @if($showCloseShiftModal)
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -191,12 +194,12 @@
                         }
                     @endphp
                     <div class="flex justify-between text-sm text-gray-600">
-                        <span>Total Penjualan:</span>
+                        <span>Total Penjualan Online:</span>
                         <span class="font-semibold text-green-600">+ Rp {{ number_format($expected - ($activeShift->starting_cash ?? 0), 0, ',', '.') }}</span>
                     </div>
                     <div class="border-t border-gray-200 my-2"></div>
                     <div class="flex justify-between font-bold text-gray-800">
-                        <span>Estimasi Saldo Akhir:</span>
+                        <span>Estimasi Saldo (belum termasuk transaksi offline):</span>
                         <span>Rp {{ number_format($expected, 0, ',', '.') }}</span>
                     </div>
                 </div>
@@ -212,4 +215,49 @@
         </div>
     </div>
     @endif
+
+    <!-- Print Receipt Template -->
+    <div id="print-receipt" x-show="lastReceipt">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Provit Farm Village</h2>
+            <p style="margin: 0; font-size: 12px;">Desa Wisata PFV</p>
+        </div>
+        
+        <div style="border-bottom: 1px dashed #000; margin-bottom: 10px; padding-bottom: 5px;">
+            <p style="margin: 0; font-size: 12px;">No: <span x-text="lastReceipt?.invoice"></span></p>
+            <p style="margin: 0; font-size: 12px;">Tgl: <span x-text="lastReceipt?.date"></span></p>
+        </div>
+
+        <table style="width: 100%; font-size: 12px; margin-bottom: 10px;">
+            <template x-for="(item, index) in lastReceipt?.cart" :key="index">
+                <tr>
+                    <td style="padding-bottom: 5px;">
+                        <div x-text="item.name"></div>
+                        <div><span x-text="item.qty"></span> x <span x-text="formatCurrency(item.price)"></span></div>
+                    </td>
+                    <td style="text-align: right; vertical-align: bottom; padding-bottom: 5px;" x-text="formatCurrency(item.qty * item.price)"></td>
+                </tr>
+            </template>
+        </table>
+
+        <div style="border-top: 1px dashed #000; padding-top: 5px; font-size: 12px;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Subtotal</span>
+                <span x-text="formatCurrency(lastReceipt?.subtotal || 0)"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Pajak (11%)</span>
+                <span x-text="formatCurrency(lastReceipt?.tax || 0)"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px; font-size: 14px;">
+                <span>TOTAL</span>
+                <span x-text="formatCurrency(lastReceipt?.total || 0)"></span>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 12px;">
+            <p style="margin: 0;">Terima Kasih atas kunjungan Anda!</p>
+            <p style="margin: 0;">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.</p>
+        </div>
+    </div>
 </div>

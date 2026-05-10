@@ -10,7 +10,6 @@ class PosIndex extends Component
 {
     public $searchQuery = '';
     public $selectedCategory = '';
-    public $cart = [];
     public $activeShift;
     public $showOpenShiftModal = false;
     public $showCloseShiftModal = false;
@@ -53,82 +52,23 @@ class PosIndex extends Component
         
         $products = $productsQuery->get();
 
-        $subtotal = collect($this->cart)->sum(fn($item) => $item['price'] * $item['qty']);
-        $tax = $subtotal * 0.11; // 11% tax
-        $total = $subtotal + $tax;
-
         return view('livewire.pos-index', [
             'products' => $products,
             'categories' => $categories,
-            'subtotal' => $subtotal,
-            'tax' => $tax,
-            'total' => $total,
         ])->layout('components.layouts.app');
     }
 
-    public function addToCart($productId)
+    public function syncTransaction($cartData, $subtotal, $tax, $total)
     {
-        $product = Product::find($productId);
-        if (!$product) return;
-
-        // Check if already in cart
-        $foundIndex = null;
-        foreach ($this->cart as $index => $item) {
-            if ($item['id'] === $product->id) {
-                $foundIndex = $index;
-                break;
-            }
-        }
-
-        if ($foundIndex !== null) {
-            $this->cart[$foundIndex]['qty']++;
-        } else {
-            $this->cart[] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->selling_price,
-                'qty' => 1,
-            ];
-        }
-    }
-
-    public function updateQty($index, $change)
-    {
-        if (isset($this->cart[$index])) {
-            $this->cart[$index]['qty'] += $change;
-            if ($this->cart[$index]['qty'] <= 0) {
-                unset($this->cart[$index]);
-                $this->cart = array_values($this->cart); // Re-index array
-            }
-        }
-    }
-
-    public function removeFromCart($index)
-    {
-        if (isset($this->cart[$index])) {
-            unset($this->cart[$index]);
-            $this->cart = array_values($this->cart); // Re-index array
-        }
-    }
-
-    public function checkout()
-    {
-        if (empty($this->cart)) return;
-
-        $subtotal = collect($this->cart)->sum(fn($item) => $item['price'] * $item['qty']);
-        $tax = $subtotal * 0.11;
-        $total = $subtotal + $tax;
-
         // Ensure active shift exists
         if (!$this->activeShift) {
             $this->dispatch('notify', 'Harap buka shift terlebih dahulu!');
-            return;
+            return false;
         }
 
         // Generate Invoice Number
         $invoice = 'INV-' . date('YmdHis') . '-' . rand(1000, 9999);
 
-        // Assume outlet_id is 1 for now (Hasil Peternakan)
         $outletId = auth()->user()?->outlet_id ?? \App\Models\Outlet::first()?->id ?? 1;
         
         $transaction = \App\Models\Transaction::create([
@@ -143,7 +83,7 @@ class PosIndex extends Component
             'status' => 'completed',
         ]);
 
-        foreach ($this->cart as $item) {
+        foreach ($cartData as $item) {
             \App\Models\TransactionItem::create([
                 'transaction_id' => $transaction->id,
                 'product_id' => $item['id'],
@@ -161,13 +101,8 @@ class PosIndex extends Component
             'change' => 0,
         ]);
 
-        $this->cart = [];
-        $this->dispatch('notify', 'Transaksi Berhasil!');
-    }
-
-    public function clearCart()
-    {
-        $this->cart = [];
+        $this->dispatch('notify', 'Transaksi Berhasil Disinkronkan!');
+        return true;
     }
 
     public function openShift()
