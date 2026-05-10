@@ -76,27 +76,28 @@
                     <template x-for="(item, index) in cart" :key="index">
                         <div class="bg-white border border-gray-100 p-3 rounded-lg shadow-sm flex flex-col gap-2 relative group">
                             
-                            <button @click="removeFromCart(index)" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-
+                            <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h4 class="text-sm font-semibold text-gray-800 pr-5" x-text="item.name"></h4>
+                                <h3 class="font-bold text-gray-800 text-sm leading-tight" x-text="item.name"></h3>
                                 <p class="text-xs text-gray-500 mt-0.5">Rp <span x-text="formatCurrency(item.price)"></span></p>
                             </div>
-                            
-                            <div class="flex items-center justify-between mt-1">
-                                <div class="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded p-0.5">
-                                    <button @click="updateQty(index, -1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
-                                    </button>
-                                    <input type="number" x-model="item.qty" class="w-10 text-center text-sm font-semibold bg-transparent border-none focus:ring-0 p-0" min="1">
-                                    <button @click="updateQty(index, 1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                                    </button>
-                                </div>
-                                <span class="font-bold text-primary-600 text-sm">Rp <span x-text="formatCurrency(item.price * item.qty)"></span></span>
+                            <button @click="removeFromCart(index)" class="text-red-400 hover:text-red-600 transition p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                        <input type="text" x-model="item.note" placeholder="Catatan pesanan..." class="w-full text-xs border border-gray-200 rounded-md p-1.5 mb-2 focus:ring-primary-500 focus:border-primary-500 outline-none">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center bg-gray-100 rounded-lg p-0.5 border border-gray-200">
+                                <button @click="updateQty(index, -1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path></svg>
+                                </button>
+                                <input type="number" x-model="item.qty" class="w-10 text-center text-sm font-semibold bg-transparent border-none focus:ring-0 p-0" min="1">
+                                <button @click="updateQty(index, 1)" class="w-6 h-6 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded transition">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                                </button>
                             </div>
+                            <span class="font-bold text-primary-600 text-sm">Rp <span x-text="formatCurrency(item.price * item.qty)"></span></span>
+                        </div>
                         </div>
                     </template>
                 </div>
@@ -135,6 +136,17 @@
                 </button>
                 <button onclick="window.print()" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
                     Print Bill
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button class="bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 font-semibold py-2 px-4 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-1" :disabled="cart.length === 0" @click="showSuspendModal = true">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Hold
+                </button>
+                <button class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm flex justify-center items-center gap-1" @click="showSuspendListModal = true">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    List Hold <span x-show="suspendedCarts.length > 0" class="bg-amber-500 text-white rounded-full text-[10px] px-1.5 py-0.5 ml-1" x-text="suspendedCarts.length"></span>
                 </button>
             </div>
             
@@ -296,6 +308,74 @@
         </div>
     </div>
 
+    <!-- Suspend Input Modal -->
+    <div x-show="showSuspendModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="showSuspendModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendModal = false"></div>
+            <div x-show="showSuspendModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+                <div class="bg-white px-6 pt-6 pb-6">
+                    <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Tahan Transaksi (Hold)</h3>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pelanggan / Catatan</label>
+                    <input type="text" x-model="suspendLabel" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 outline-none mb-2" placeholder="Misal: Meja 4 / Budi">
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse rounded-b-2xl gap-2">
+                    <button @click="suspendCart" class="inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-amber-500 text-base font-bold text-white hover:bg-amber-600 focus:outline-none">
+                        Simpan & Kosongkan
+                    </button>
+                    <button @click="showSuspendModal = false" class="inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-bold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                        Batal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suspend List Modal -->
+    <div x-show="showSuspendListModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="showSuspendListModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendListModal = false"></div>
+            <div x-show="showSuspendListModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div class="bg-white px-6 pt-6 pb-4">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-xl leading-6 font-bold text-gray-900">Daftar Transaksi Ditahan</h3>
+                        <button @click="showSuspendListModal = false" class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="max-h-96 overflow-y-auto pr-2">
+                        <template x-if="suspendedCarts.length === 0">
+                            <div class="text-center text-gray-500 py-8">
+                                <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                                Tidak ada transaksi yang ditahan.
+                            </div>
+                        </template>
+                        <template x-for="(scart, index) in suspendedCarts" :key="index">
+                            <div class="flex items-center justify-between border-b border-gray-200 py-3 last:border-0">
+                                <div>
+                                    <h4 class="font-bold text-gray-800" x-text="scart.label"></h4>
+                                    <p class="text-xs text-gray-500">
+                                        <span x-text="scart.timestamp"></span> • <span x-text="scart.cart.length"></span> item
+                                    </p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button @click="resumeCart(index)" class="bg-primary-100 text-primary-700 hover:bg-primary-200 px-3 py-1.5 rounded text-sm font-semibold transition">
+                                        Lanjutkan
+                                    </button>
+                                    <button @click="deleteSuspendedCart(index)" class="text-red-400 hover:text-red-600 p-1.5 rounded hover:bg-red-50 transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Print Receipt Template -->
     <div id="print-receipt" x-show="lastReceipt">
         <div style="text-align: center; margin-bottom: 10px;">
@@ -312,7 +392,10 @@
             <template x-for="(item, index) in lastReceipt?.cart" :key="index">
                 <tr>
                     <td style="padding-bottom: 5px;">
-                        <div x-text="item.name"></div>
+                        <div x-text="item.name" style="font-weight: bold;"></div>
+                        <template x-if="item.note">
+                            <div style="font-size: 10px; font-style: italic; color: #555;">Catatan: <span x-text="item.note"></span></div>
+                        </template>
                         <div><span x-text="item.qty"></span> x <span x-text="formatCurrency(item.price)"></span></div>
                     </td>
                     <td style="text-align: right; vertical-align: bottom; padding-bottom: 5px;" x-text="formatCurrency(item.qty * item.price)"></td>
@@ -332,6 +415,17 @@
             <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px; font-size: 14px;">
                 <span>TOTAL</span>
                 <span x-text="formatCurrency(lastReceipt?.total || 0)"></span>
+            </div>
+        </div>
+
+        <div style="border-top: 1px dashed #000; padding-top: 5px; font-size: 12px; margin-top: 5px;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Pembayaran (<span style="text-transform: uppercase;" x-text="lastReceipt?.paymentMethod"></span>)</span>
+                <span x-text="formatCurrency(lastReceipt?.cashAmount || 0)"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Kembalian</span>
+                <span x-text="formatCurrency(lastReceipt?.changeAmount || 0)"></span>
             </div>
         </div>
 

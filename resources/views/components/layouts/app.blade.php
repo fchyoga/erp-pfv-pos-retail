@@ -41,14 +41,25 @@
                 cashAmount: '',
                 changeAmount: 0,
                 
+                // Suspend State
+                suspendedCarts: [],
+                showSuspendModal: false,
+                suspendLabel: '',
+                showSuspendListModal: false,
+                
                 async init() {
                     this.cart = await localforage.getItem('pos_cart') || [];
                     this.syncQueue = await localforage.getItem('pos_sync_queue') || [];
+                    this.suspendedCarts = await localforage.getItem('pos_suspended_carts') || [];
                     this.calculateTotals();
                     
                     this.$watch('cart', (val) => {
                         localforage.setItem('pos_cart', val);
                         this.calculateTotals();
+                    }, { deep: true });
+                    
+                    this.$watch('suspendedCarts', (val) => {
+                        localforage.setItem('pos_suspended_carts', val);
                     }, { deep: true });
                     
                     this.$watch('cashAmount', (val) => {
@@ -110,7 +121,8 @@
                             id: product.id,
                             name: product.name,
                             price: product.selling_price,
-                            qty: 1
+                            qty: 1,
+                            note: ''
                         });
                     }
                 },
@@ -128,6 +140,42 @@
                 
                 clearCart() {
                     this.cart = [];
+                },
+                
+                suspendCart() {
+                    if (this.cart.length === 0) return;
+                    if (!this.suspendLabel) {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: ['Masukkan nama/label pelanggan!'] }));
+                        return;
+                    }
+                    
+                    this.suspendedCarts.push({
+                        label: this.suspendLabel,
+                        cart: JSON.parse(JSON.stringify(this.cart)),
+                        timestamp: new Date().toLocaleString('id-ID')
+                    });
+                    
+                    this.clearCart();
+                    this.showSuspendModal = false;
+                    this.suspendLabel = '';
+                    window.dispatchEvent(new CustomEvent('notify', { detail: ['Transaksi berhasil ditahan (Suspend).'] }));
+                },
+                
+                resumeCart(index) {
+                    if (this.cart.length > 0) {
+                        if (!confirm('Keranjang saat ini tidak kosong. Ganti dengan transaksi ini?')) {
+                            return;
+                        }
+                    }
+                    this.cart = JSON.parse(JSON.stringify(this.suspendedCarts[index].cart));
+                    this.suspendedCarts.splice(index, 1);
+                    this.showSuspendListModal = false;
+                },
+                
+                deleteSuspendedCart(index) {
+                    if (confirm('Hapus transaksi tertunda ini?')) {
+                        this.suspendedCarts.splice(index, 1);
+                    }
                 },
                 
                 openCheckout() {
@@ -168,6 +216,7 @@
                             tax: this.tax,
                             total: this.total,
                             paymentMethod: this.paymentMethod,
+                            changeAmount: this.changeAmount,
                             timestamp: new Date().toISOString()
                         });
                         await localforage.setItem('pos_sync_queue', this.syncQueue);
@@ -177,7 +226,7 @@
                     } else {
                         // Call livewire method syncTransaction manually
                         let livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.tax, this.total, this.paymentMethod);
+                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.tax, this.total, this.paymentMethod, this.changeAmount);
                         if (success) {
                             this.clearCart();
                             setTimeout(() => window.print(), 500); // Auto print
@@ -194,7 +243,7 @@
                     for (let i = 0; i < this.syncQueue.length; i++) {
                         let tx = this.syncQueue[i];
                         try {
-                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.tax, tx.total, tx.paymentMethod || 'cash');
+                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
                             if (success) {
                                 successfulIndexes.push(i);
                             }

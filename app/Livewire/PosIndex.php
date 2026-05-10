@@ -58,7 +58,7 @@ class PosIndex extends Component
         ])->layout('components.layouts.app');
     }
 
-    public function syncTransaction($cartData, $subtotal, $tax, $total, $paymentMethod = 'cash')
+    public function syncTransaction($cartData, $subtotal, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
     {
         // Ensure active shift exists
         if (!$this->activeShift) {
@@ -91,6 +91,7 @@ class PosIndex extends Component
                 'quantity' => $item['qty'],
                 'unit_price' => $item['price'],
                 'subtotal' => $item['price'] * $item['qty'],
+                'note' => $item['note'] ?? null,
             ]);
         }
 
@@ -98,7 +99,7 @@ class PosIndex extends Component
             'transaction_id' => $transaction->id,
             'method' => $paymentMethod,
             'amount' => $total,
-            'change' => 0,
+            'change' => $changeAmount,
         ]);
 
         $this->dispatch('notify', 'Transaksi Berhasil Disinkronkan!');
