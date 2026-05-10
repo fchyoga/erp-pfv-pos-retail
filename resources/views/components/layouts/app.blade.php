@@ -25,12 +25,15 @@
         }
         
         document.addEventListener('alpine:init', () => {
-            Alpine.data('posApp', (productsData) => ({
+            Alpine.data('posApp', (productsData, taxPct = 11, discountPct = 0) => ({
                 products: productsData,
+                taxPercentage: taxPct,
+                discountPercentage: discountPct,
                 cart: [],
                 syncQueue: [],
                 subtotal: 0,
                 tax: 0,
+                discountAmount: 0,
                 total: 0,
                 isOffline: !navigator.onLine,
                 lastReceipt: null,
@@ -86,8 +89,10 @@
                 
                 calculateTotals() {
                     this.subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                    this.tax = this.subtotal * 0.11;
-                    this.total = this.subtotal + this.tax;
+                    this.discountAmount = this.subtotal * (this.discountPercentage / 100);
+                    let afterDiscount = this.subtotal - this.discountAmount;
+                    this.tax = afterDiscount * (this.taxPercentage / 100);
+                    this.total = afterDiscount + this.tax;
                     this.calculateChange();
                 },
                 
@@ -200,6 +205,7 @@
                         invoice: invoiceNumber,
                         cart: JSON.parse(JSON.stringify(this.cart)),
                         subtotal: this.subtotal,
+                        discount: this.discountAmount,
                         tax: this.tax,
                         total: this.total,
                         paymentMethod: this.paymentMethod,
@@ -213,6 +219,7 @@
                             id: Date.now(),
                             cart: JSON.parse(JSON.stringify(this.cart)),
                             subtotal: this.subtotal,
+                            discount: this.discountAmount,
                             tax: this.tax,
                             total: this.total,
                             paymentMethod: this.paymentMethod,
@@ -226,7 +233,7 @@
                     } else {
                         // Call livewire method syncTransaction manually
                         let livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.tax, this.total, this.paymentMethod, this.changeAmount);
+                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.discountAmount, this.tax, this.total, this.paymentMethod, this.changeAmount);
                         if (success) {
                             this.clearCart();
                             setTimeout(() => window.print(), 500); // Auto print
@@ -243,7 +250,7 @@
                     for (let i = 0; i < this.syncQueue.length; i++) {
                         let tx = this.syncQueue[i];
                         try {
-                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
+                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.discount || 0, tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
                             if (success) {
                                 successfulIndexes.push(i);
                             }

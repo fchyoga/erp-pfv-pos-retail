@@ -19,6 +19,14 @@ class OutletsTable
                     ->searchable(),
                 TextColumn::make('phone')
                     ->searchable(),
+                TextColumn::make('tax_percentage')
+                    ->suffix('%')
+                    ->label('Pajak')
+                    ->sortable(),
+                TextColumn::make('discount_percentage')
+                    ->suffix('%')
+                    ->label('Diskon')
+                    ->sortable(),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')

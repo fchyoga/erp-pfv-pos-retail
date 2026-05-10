@@ -52,13 +52,19 @@ class PosIndex extends Component
         
         $products = $productsQuery->get();
 
+        $outlet = auth()->user()?->outlet;
+        $taxPercentage = $outlet?->tax_percentage ?? 11;
+        $discountPercentage = $outlet?->discount_percentage ?? 0;
+
         return view('livewire.pos-index', [
             'products' => $products,
             'categories' => $categories,
+            'taxPercentage' => $taxPercentage,
+            'discountPercentage' => $discountPercentage,
         ])->layout('components.layouts.app');
     }
 
-    public function syncTransaction($cartData, $subtotal, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
+    public function syncTransaction($cartData, $subtotal, $discount, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
     {
         // Ensure active shift exists
         if (!$this->activeShift) {
@@ -77,6 +83,7 @@ class PosIndex extends Component
             'shift_id' => $this->activeShift->id,
             'invoice_number' => $invoice,
             'subtotal' => $subtotal,
+            'discount' => $discount,
             'tax' => $tax,
             'total' => $total,
             'payment_status' => 'paid',

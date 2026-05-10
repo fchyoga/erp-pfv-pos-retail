@@ -19,6 +19,16 @@ class OutletForm
                     ->columnSpanFull(),
                 TextInput::make('phone')
                     ->tel(),
+                TextInput::make('tax_percentage')
+                    ->numeric()
+                    ->default(11)
+                    ->suffix('%')
+                    ->label('Pajak (Tax)'),
+                TextInput::make('discount_percentage')
+                    ->numeric()
+                    ->default(0)
+                    ->suffix('%')
+                    ->label('Diskon Otomatis (Global)'),
                 Toggle::make('is_active')
                     ->required(),
             ]);

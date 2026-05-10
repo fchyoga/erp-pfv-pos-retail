@@ -1,4 +1,4 @@
-<div x-data="posApp(@js($products->keyBy('id')))" class="flex h-full w-full relative">
+<div x-data="posApp(@js($products->keyBy('id')), {{ $taxPercentage }}, {{ $discountPercentage }})" class="flex h-full w-full relative">
     
     <!-- Offline Indicator -->
     <div x-show="isOffline" style="display: none;" class="absolute top-0 left-0 right-0 bg-orange-500 text-white text-center py-1 text-sm font-bold z-50">
@@ -116,8 +116,14 @@
                 <span>Subtotal</span>
                 <span>Rp <span x-text="formatCurrency(subtotal)"></span></span>
             </div>
+            <template x-if="discountPercentage > 0">
+                <div class="flex justify-between items-center mb-2 text-sm text-gray-600">
+                    <span>Diskon (<span x-text="discountPercentage"></span>%)</span>
+                    <span class="text-red-500">- Rp <span x-text="formatCurrency(discountAmount)"></span></span>
+                </div>
+            </template>
             <div class="flex justify-between items-center mb-4 text-sm text-gray-600">
-                <span>Pajak (11%)</span>
+                <span>Pajak (<span x-text="taxPercentage"></span>%)</span>
                 <span>Rp <span x-text="formatCurrency(tax)"></span></span>
             </div>
             
@@ -408,8 +414,14 @@
                 <span>Subtotal</span>
                 <span x-text="formatCurrency(lastReceipt?.subtotal || 0)"></span>
             </div>
+            <template x-if="lastReceipt?.discount > 0">
+                <div style="display: flex; justify-content: space-between; color: #555;">
+                    <span>Diskon</span>
+                    <span x-text="'-' + formatCurrency(lastReceipt?.discount || 0)"></span>
+                </div>
+            </template>
             <div style="display: flex; justify-content: space-between;">
-                <span>Pajak (11%)</span>
+                <span>Pajak</span>
                 <span x-text="formatCurrency(lastReceipt?.tax || 0)"></span>
             </div>
             <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px; font-size: 14px;">

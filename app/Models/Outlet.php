@@ -11,5 +11,7 @@ class Outlet extends Model
         'address',
         'phone',
         'is_active',
+        'tax_percentage',
+        'discount_percentage',
     ];
 }
