@@ -7,4 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Shift extends Model
 {
     protected $guarded = [];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
