@@ -1,4 +1,8 @@
-<div x-data="posApp(@js($products->keyBy('id')), {{ $taxPercentage }}, {{ $discountPercentage }})" class="flex h-full w-full relative">
+<div x-data="posApp({{ $taxPercentage }}, {{ $discountPercentage }})" 
+     id="pos-root-element"
+     :class="{ 'is-printing-rekap': printingRekap }"
+     data-products="{{ json_encode($products->keyBy('id')) }}"
+     class="flex h-full w-full relative">
     
     <!-- Offline Indicator -->
     <div x-show="isOffline" style="display: none;" class="absolute top-0 left-0 right-0 bg-orange-500 text-white text-center py-1 text-sm font-bold z-50">
@@ -71,7 +75,7 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-2">
+        <div class="flex-1 overflow-y-auto p-2" wire:ignore>
             <template x-if="cart.length > 0">
                 <div class="space-y-2">
                     <template x-for="(item, index) in cart" :key="index">
@@ -79,8 +83,15 @@
                             
                             <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold text-gray-800 text-sm leading-tight" x-text="item.name"></h3>
-                                <p class="text-xs text-gray-500 mt-0.5">Rp <span x-text="formatCurrency(item.price)"></span></p>
+                                <h3 class="font-bold text-gray-800 text-sm leading-tight cursor-pointer hover:text-primary-600" @click="openItemDiscountModal(index)" x-text="item.name"></h3>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <p class="text-xs text-gray-500">Rp <span x-text="formatCurrency(item.price)"></span></p>
+                                    <template x-if="item.discountAmount > 0">
+                                        <span class="bg-red-100 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer" @click="openItemDiscountModal(index)">
+                                            Diskon: <span x-text="item.discountType === 'percentage' ? item.discountAmount + '%' : 'Rp ' + formatCurrency(item.discountAmount)"></span>
+                                        </span>
+                                    </template>
+                                </div>
                             </div>
                             <button @click="removeFromCart(index)" class="text-red-400 hover:text-red-600 transition p-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -117,12 +128,21 @@
                 <span>Subtotal</span>
                 <span>Rp <span x-text="formatCurrency(subtotal)"></span></span>
             </div>
-            <template x-if="discountPercentage > 0">
-                <div class="flex justify-between items-center mb-2 text-sm text-gray-600">
-                    <span>Diskon (<span x-text="discountPercentage"></span>%)</span>
-                    <span class="text-red-500">- Rp <span x-text="formatCurrency(discountAmount)"></span></span>
-                </div>
-            </template>
+            
+            <!-- Global Discount Section -->
+            <div class="flex justify-between items-center mb-2 text-sm text-gray-600">
+                <button @click="openTransactionDiscountModal" class="text-primary-600 hover:text-primary-700 font-medium underline decoration-dashed underline-offset-2">
+                    <template x-if="discountAmount > 0">
+                        <span>Diskon (<span x-text="transactionDiscountType === 'percentage' ? transactionDiscountInput + '%' : 'Rp ' + formatCurrency(transactionDiscountInput)"></span>)</span>
+                    </template>
+                    <template x-if="discountAmount <= 0">
+                        <span>+ Tambah Diskon</span>
+                    </template>
+                </button>
+                <template x-if="discountAmount > 0">
+                    <span class="text-red-500 font-semibold">- Rp <span x-text="formatCurrency(discountAmount)"></span></span>
+                </template>
+            </div>
             <div class="flex justify-between items-center mb-4 text-sm text-gray-600">
                 <span>Pajak (<span x-text="taxPercentage"></span>%)</span>
                 <span>Rp <span x-text="formatCurrency(tax)"></span></span>
@@ -159,11 +179,17 @@
             
             @if($activeShift)
             <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                <button wire:click="voidLastTransaction" wire:confirm="Apakah Anda yakin ingin melakukan Void (Membatalkan) transaksi terakhir?" class="w-full bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2 px-4 rounded-lg transition text-sm flex justify-center items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Void Transaksi Terakhir
-                </button>
-                <button wire:click="$set('showCloseShiftModal', true)" class="w-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-2 px-4 rounded-lg transition text-sm">
+                <div class="flex gap-2">
+                    <button wire:click="voidLastTransaction" wire:confirm="Apakah Anda yakin ingin melakukan Void (Membatalkan) transaksi terakhir?" class="flex-1 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2 px-2 rounded-lg transition text-xs flex justify-center items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Void Terakhir
+                    </button>
+                    <button wire:click="loadTransactionHistory" class="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-2 px-2 rounded-lg transition text-xs flex justify-center items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        History Shift
+                    </button>
+                </div>
+                <button wire:click="openCloseShiftModal" class="w-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-2 px-4 rounded-lg transition text-sm">
                     Tutup Shift Kasir
                 </button>
             </div>
@@ -173,7 +199,7 @@
 
     <!-- Modals code unchanged, appended below -->
     @if($showOpenShiftModal)
-    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div class="bg-primary-600 px-6 py-4">
                 <h3 class="text-xl font-bold text-white">Buka Shift Kasir</h3>
@@ -193,7 +219,7 @@
     @endif
 
     @if($showCloseShiftModal)
-    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div class="bg-red-600 px-6 py-4 flex justify-between items-center">
                 <div>
@@ -231,16 +257,21 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Uang Fisik Aktual di Laci (Rp)</label>
                     <input type="number" wire:model="actualEndingCash" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-lg font-bold rounded-lg focus:ring-red-500 focus:border-red-500 block p-3 outline-none" placeholder="0">
                 </div>
-                <button wire:click="closeShift" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition text-lg">
-                    AKHIRI SHIFT
-                </button>
+                <div class="flex gap-3">
+                    <button wire:click="closeShift(false)" class="flex-1 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-bold py-3 rounded-lg shadow-sm transition text-sm">
+                        AKHIRI SAJA
+                    </button>
+                    <button @click="printingRekap = true; setTimeout(() => { window.print(); printingRekap = false; $wire.closeShift(true); }, 500)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition text-sm">
+                        AKHIRI & CETAK REKAP
+                    </button>
+                </div>
             </div>
         </div>
     </div>
     @endif
 
     <!-- Checkout Modal -->
-    <div x-show="showCheckoutModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div x-show="showCheckoutModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showCheckoutModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showCheckoutModal = false"></div>
 
@@ -319,8 +350,86 @@
         </div>
     </div>
 
+    <!-- Item Discount Modal -->
+    <div x-show="showItemDiscountModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="showItemDiscountModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showItemDiscountModal = false"></div>
+            <div x-show="showItemDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+                <div class="bg-white px-6 pt-6 pb-6">
+                    <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Diskon per Item</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Diskon</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" x-model="tempItemDiscountType" value="fixed" class="text-primary-600 focus:ring-primary-500 w-4 h-4">
+                                <span class="text-sm text-gray-700">Nominal (Rp)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" x-model="tempItemDiscountType" value="percentage" class="text-primary-600 focus:ring-primary-500 w-4 h-4">
+                                <span class="text-sm text-gray-700">Persentase (%)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Besaran Diskon</label>
+                        <input type="number" x-model="tempItemDiscountAmount" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 outline-none" placeholder="0">
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse rounded-b-2xl gap-2">
+                    <button @click="applyItemDiscount" class="inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-bold text-white hover:bg-primary-700 focus:outline-none">
+                        Terapkan
+                    </button>
+                    <button @click="showItemDiscountModal = false" class="inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-bold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                        Batal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Discount Modal -->
+    <div x-show="showTransactionDiscountModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="showTransactionDiscountModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showTransactionDiscountModal = false"></div>
+            <div x-show="showTransactionDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+                <div class="bg-white px-6 pt-6 pb-6">
+                    <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Diskon Total (Keranjang)</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Diskon</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" x-model="tempTxDiscountType" value="fixed" class="text-primary-600 focus:ring-primary-500 w-4 h-4">
+                                <span class="text-sm text-gray-700">Nominal (Rp)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" x-model="tempTxDiscountType" value="percentage" class="text-primary-600 focus:ring-primary-500 w-4 h-4">
+                                <span class="text-sm text-gray-700">Persentase (%)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Besaran Diskon</label>
+                        <input type="number" x-model="tempTxDiscountAmount" class="w-full bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 outline-none" placeholder="0">
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse rounded-b-2xl gap-2">
+                    <button @click="applyTransactionDiscount" class="inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-bold text-white hover:bg-primary-700 focus:outline-none">
+                        Terapkan
+                    </button>
+                    <button @click="showTransactionDiscountModal = false" class="inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-bold text-gray-700 hover:bg-gray-50 focus:outline-none">
+                        Batal
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Suspend Input Modal -->
-    <div x-show="showSuspendModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div x-show="showSuspendModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showSuspendModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendModal = false"></div>
             <div x-show="showSuspendModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
@@ -342,7 +451,7 @@
     </div>
 
     <!-- Suspend List Modal -->
-    <div x-show="showSuspendListModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div x-show="showSuspendListModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showSuspendListModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendListModal = false"></div>
             <div x-show="showSuspendListModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
@@ -386,9 +495,67 @@
             </div>
         </div>
     </div>
+    <!-- Transaction History Modal -->
+    @if($showHistoryModal)
+    <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50 print:hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800">History Shift Aktif</h3>
+                <button wire:click="$set('showHistoryModal', false)" class="text-gray-400 hover:text-gray-600">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div class="p-0 overflow-y-auto flex-1">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Invoice</th>
+                            <th scope="col" class="px-6 py-3">Waktu</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Total</th>
+                            <th scope="col" class="px-6 py-3">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($shiftTransactions as $tx)
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="px-6 py-3 font-medium text-gray-900">{{ $tx->invoice_number }}</td>
+                                <td class="px-6 py-3">{{ $tx->created_at->format('H:i:s') }}</td>
+                                <td class="px-6 py-3">
+                                    @if($tx->status === 'completed')
+                                        <span class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded border border-green-400">Completed</span>
+                                    @elseif($tx->status === 'void')
+                                        <span class="bg-red-100 text-red-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded border border-red-400">Void</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-3">Rp {{ number_format($tx->total, 0, ',', '.') }}</td>
+                                <td class="px-6 py-3">
+                                    @if($tx->status === 'completed')
+                                    <button wire:click="refundTransaction({{ $tx->id }})" wire:confirm="Anda yakin ingin me-Refund/Void transaksi {{ $tx->invoice_number }}? Semua stok akan dikembalikan." class="text-red-600 hover:text-red-900 font-medium text-xs px-2 py-1 border border-red-600 rounded hover:bg-red-50 transition">
+                                        Refund
+                                    </button>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                    Belum ada transaksi di shift ini.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                <p class="text-xs text-gray-500 text-center">* Hanya menampilkan transaksi yang terjadi pada shift saat ini.</p>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Print Receipt Template -->
-    <div id="print-receipt" x-show="lastReceipt">
+    <div id="print-receipt">
         <div style="text-align: center; margin-bottom: 10px;">
             <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Provit Farm Village</h2>
             <p style="margin: 0; font-size: 12px;">Desa Wisata PFV</p>
@@ -449,6 +616,58 @@
         <div style="text-align: center; margin-top: 20px; font-size: 12px;">
             <p style="margin: 0;">Terima Kasih atas kunjungan Anda!</p>
             <p style="margin: 0;">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.</p>
+        </div>
+    </div>
+
+    <!-- Print Rekap Shift Template -->
+    <div id="print-rekap">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Provit Farm Village</h2>
+            <p style="margin: 0; font-size: 12px;">REKAPITULASI SHIFT</p>
+        </div>
+        
+        <div style="border-bottom: 1px dashed #000; margin-bottom: 10px; padding-bottom: 5px; font-size: 12px;">
+            <p style="margin: 0;">Kasir: {{ auth()->user()->name ?? 'Admin' }}</p>
+            <p style="margin: 0;">Waktu Buka: {{ $activeShift ? $activeShift->created_at->format('d/m/Y H:i') : '' }}</p>
+            <p style="margin: 0;">Waktu Tutup: <span x-text="new Date().toLocaleString('id-ID')"></span></p>
+        </div>
+
+        <div style="font-size: 12px; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Modal Awal</span>
+                <span>Rp {{ number_format($activeShift->starting_cash ?? 0, 0, ',', '.') }}</span>
+            </div>
+            <div style="border-bottom: 1px dashed #ccc; margin: 5px 0;"></div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total Cash</span>
+                <span>Rp {{ number_format($paymentSummary['cash'] ?? 0, 0, ',', '.') }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total QRIS</span>
+                <span>Rp {{ number_format($paymentSummary['qris'] ?? 0, 0, ',', '.') }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total Transfer</span>
+                <span>Rp {{ number_format($paymentSummary['transfer'] ?? 0, 0, ',', '.') }}</span>
+            </div>
+            <div style="border-bottom: 1px dashed #000; margin: 5px 0;"></div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                <span>Total Penjualan</span>
+                <span>Rp {{ number_format(($paymentSummary['cash'] ?? 0) + ($paymentSummary['qris'] ?? 0) + ($paymentSummary['transfer'] ?? 0), 0, ',', '.') }}</span>
+            </div>
+            <div style="border-bottom: 1px dashed #000; margin: 5px 0;"></div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                <span>Estimasi Saldo Laci</span>
+                <span>Rp {{ number_format(($activeShift->starting_cash ?? 0) + ($paymentSummary['cash'] ?? 0), 0, ',', '.') }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-top: 5px;">
+                <span>Uang Aktual (Diinput)</span>
+                <span>Rp <span x-text="formatCurrency($wire.actualEndingCash || 0)"></span></span>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 12px;">
+            <p style="margin: 0;">-- End of Report --</p>
         </div>
     </div>
 </div>

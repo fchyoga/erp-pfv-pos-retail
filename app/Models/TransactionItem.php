@@ -13,6 +13,8 @@ class TransactionItem extends Model
         return [
             'unit_price' => 'decimal:2',
             'cost_price' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'discount_type' => 'string',
             'subtotal' => 'decimal:2',
         ];
     }

@@ -25,8 +25,11 @@
         }
         
         document.addEventListener('alpine:init', () => {
-            Alpine.data('posApp', (productsData, taxPct = 11, discountPct = 0) => ({
-                products: productsData,
+            Alpine.data('posApp', (taxPct = 11, discountPct = 0) => ({
+                get products() { 
+                    const el = document.getElementById('pos-root-element');
+                    return el ? JSON.parse(el.dataset.products) : {}; 
+                },
                 taxPercentage: taxPct,
                 discountPercentage: discountPct,
                 cart: [],
@@ -34,9 +37,12 @@
                 subtotal: 0,
                 tax: 0,
                 discountAmount: 0,
+                transactionDiscountInput: 0,
+                transactionDiscountType: 'fixed',
                 total: 0,
                 isOffline: !navigator.onLine,
                 lastReceipt: null,
+                printingRekap: false,
                 
                 // Payment State
                 showCheckoutModal: false,
@@ -49,6 +55,15 @@
                 showSuspendModal: false,
                 suspendLabel: '',
                 showSuspendListModal: false,
+                
+                // Discount Modals State
+                showItemDiscountModal: false,
+                selectedCartIndex: null,
+                tempItemDiscountType: 'fixed',
+                tempItemDiscountAmount: 0,
+                showTransactionDiscountModal: false,
+                tempTxDiscountType: 'fixed',
+                tempTxDiscountAmount: 0,
                 
                 async init() {
                     this.cart = await localforage.getItem('pos_cart') || [];
@@ -88,8 +103,32 @@
                 },
                 
                 calculateTotals() {
-                    this.subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                    this.discountAmount = this.subtotal * (this.discountPercentage / 100);
+                    let sub = 0;
+                    this.cart.forEach(item => {
+                        let itemTotal = item.price * item.qty;
+                        let itemDiscount = 0;
+                        if (item.discountType === 'percentage') {
+                            itemDiscount = itemTotal * (item.discountAmount / 100);
+                        } else {
+                            itemDiscount = parseFloat(item.discountAmount) || 0;
+                        }
+                        // item discount shouldn't exceed item total
+                        itemDiscount = Math.min(itemDiscount, itemTotal);
+                        sub += (itemTotal - itemDiscount);
+                    });
+                    
+                    this.subtotal = sub;
+                    
+                    let txDiscount = 0;
+                    if (this.transactionDiscountType === 'percentage') {
+                        txDiscount = this.subtotal * (this.transactionDiscountInput / 100);
+                    } else {
+                        txDiscount = parseFloat(this.transactionDiscountInput) || 0;
+                    }
+                    txDiscount = Math.min(txDiscount, this.subtotal);
+                    
+                    this.discountAmount = txDiscount;
+                    
                     let afterDiscount = this.subtotal - this.discountAmount;
                     this.tax = afterDiscount * (this.taxPercentage / 100);
                     this.total = afterDiscount + this.tax;
@@ -127,9 +166,40 @@
                             name: product.name,
                             price: product.selling_price,
                             qty: 1,
-                            note: ''
+                            note: '',
+                            discountType: 'fixed',
+                            discountAmount: 0
                         });
                     }
+                },
+                
+                openItemDiscountModal(index) {
+                    this.selectedCartIndex = index;
+                    this.tempItemDiscountType = this.cart[index].discountType || 'fixed';
+                    this.tempItemDiscountAmount = this.cart[index].discountAmount || 0;
+                    this.showItemDiscountModal = true;
+                },
+                
+                applyItemDiscount() {
+                    if (this.selectedCartIndex !== null) {
+                        this.cart[this.selectedCartIndex].discountType = this.tempItemDiscountType;
+                        this.cart[this.selectedCartIndex].discountAmount = parseFloat(this.tempItemDiscountAmount) || 0;
+                        this.calculateTotals();
+                    }
+                    this.showItemDiscountModal = false;
+                },
+                
+                openTransactionDiscountModal() {
+                    this.tempTxDiscountType = this.transactionDiscountType;
+                    this.tempTxDiscountAmount = this.transactionDiscountInput;
+                    this.showTransactionDiscountModal = true;
+                },
+                
+                applyTransactionDiscount() {
+                    this.transactionDiscountType = this.tempTxDiscountType;
+                    this.transactionDiscountInput = parseFloat(this.tempTxDiscountAmount) || 0;
+                    this.calculateTotals();
+                    this.showTransactionDiscountModal = false;
                 },
                 
                 updateQty(index, change) {
@@ -206,6 +276,7 @@
                         cart: JSON.parse(JSON.stringify(this.cart)),
                         subtotal: this.subtotal,
                         discount: this.discountAmount,
+                        discountType: this.transactionDiscountType,
                         tax: this.tax,
                         total: this.total,
                         paymentMethod: this.paymentMethod,
@@ -220,6 +291,7 @@
                             cart: JSON.parse(JSON.stringify(this.cart)),
                             subtotal: this.subtotal,
                             discount: this.discountAmount,
+                            discountType: this.transactionDiscountType,
                             tax: this.tax,
                             total: this.total,
                             paymentMethod: this.paymentMethod,
@@ -233,7 +305,7 @@
                     } else {
                         // Call livewire method syncTransaction manually
                         let livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.discountAmount, this.tax, this.total, this.paymentMethod, this.changeAmount);
+                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.discountAmount, this.transactionDiscountType, this.tax, this.total, this.paymentMethod, this.changeAmount);
                         if (success) {
                             this.clearCart();
                             setTimeout(() => window.print(), 500); // Auto print
@@ -250,7 +322,7 @@
                     for (let i = 0; i < this.syncQueue.length; i++) {
                         let tx = this.syncQueue[i];
                         try {
-                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.discount || 0, tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
+                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.discount || 0, tx.discountType || 'fixed', tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
                             if (success) {
                                 successfulIndexes.push(i);
                             }
@@ -312,18 +384,42 @@
             header, 
             .left-panel-ui, 
             .right-panel-ui,
-            .toast-notification {
+            .toast-notification,
+            .fixed.inset-0, /* Livewire & Alpine Modals */
+            [role="dialog"] {
                 display: none !important;
             }
             
-            /* Show only the receipt */
-            #print-receipt {
-                display: block !important;
+            /* Remove overflow restrictions for printing */
+            #app-wrapper, body, main {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            
+            /* Print elements */
+            #print-receipt, #print-rekap {
                 width: 58mm; /* Standard thermal receipt width */
-                padding: 10px;
+                padding: 0;
+                margin: 0;
                 font-family: monospace;
                 font-size: 12px;
-                margin: 0 auto;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+            
+            .is-printing-rekap #print-receipt {
+                display: none !important;
+            }
+            
+            #pos-root-element:not(.is-printing-rekap) #print-rekap {
+                display: none !important;
+            }
+        }
+        
+        @media screen {
+            #print-receipt, #print-rekap {
+                display: none !important;
             }
         }
     </style>

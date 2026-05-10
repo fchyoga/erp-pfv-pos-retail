@@ -15,6 +15,10 @@ class PosIndex extends Component
     public $showCloseShiftModal = false;
     public $startingCash = 0;
     public $actualEndingCash = 0;
+    
+    public $showHistoryModal = false;
+    public $shiftTransactions = [];
+    public $paymentSummary = ['cash' => 0, 'qris' => 0, 'transfer' => 0];
 
     public function mount()
     {
@@ -64,7 +68,7 @@ class PosIndex extends Component
         ])->layout('components.layouts.app');
     }
 
-    public function syncTransaction($cartData, $subtotal, $discount, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
+    public function syncTransaction($cartData, $subtotal, $discount, $discountType, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
     {
         // Ensure active shift exists
         if (!$this->activeShift) {
@@ -84,6 +88,7 @@ class PosIndex extends Component
             'invoice_number' => $invoice,
             'subtotal' => $subtotal,
             'discount' => $discount,
+            'discount_type' => $discountType,
             'tax' => $tax,
             'total' => $total,
             'payment_status' => 'paid',
@@ -101,6 +106,8 @@ class PosIndex extends Component
                 'quantity' => $item['qty'],
                 'unit_price' => $item['price'],
                 'cost_price' => $costPrice,
+                'discount_amount' => $item['discountAmount'] ?? 0,
+                'discount_type' => $item['discountType'] ?? 'fixed',
                 'subtotal' => $item['price'] * $item['qty'],
                 'note' => $item['note'] ?? null,
             ]);
@@ -152,7 +159,30 @@ class PosIndex extends Component
         $this->dispatch('notify', 'Shift Berhasil Dibuka!');
     }
 
-    public function closeShift()
+    public function calculatePaymentSummary()
+    {
+        if (!$this->activeShift) return;
+        
+        $this->paymentSummary = [
+            'cash' => \App\Models\Payment::whereHas('transaction', function($q) {
+                $q->where('shift_id', $this->activeShift->id)->where('payment_status', 'paid');
+            })->where('method', 'cash')->sum('amount'),
+            'qris' => \App\Models\Payment::whereHas('transaction', function($q) {
+                $q->where('shift_id', $this->activeShift->id)->where('payment_status', 'paid');
+            })->where('method', 'qris')->sum('amount'),
+            'transfer' => \App\Models\Payment::whereHas('transaction', function($q) {
+                $q->where('shift_id', $this->activeShift->id)->where('payment_status', 'paid');
+            })->where('method', 'transfer')->sum('amount'),
+        ];
+    }
+
+    public function openCloseShiftModal()
+    {
+        $this->calculatePaymentSummary();
+        $this->showCloseShiftModal = true;
+    }
+
+    public function closeShift($printed = false)
     {
         if (!$this->activeShift) return;
 
@@ -178,6 +208,66 @@ class PosIndex extends Component
         $this->actualEndingCash = 0;
         
         $this->dispatch('notify', 'Shift Berhasil Ditutup!');
+    }
+    
+    public function loadTransactionHistory()
+    {
+        if (!$this->activeShift) {
+            $this->dispatch('notify', 'Harap buka shift terlebih dahulu!');
+            return;
+        }
+
+        $this->shiftTransactions = \App\Models\Transaction::where('shift_id', $this->activeShift->id)
+            ->where('user_id', auth()->id() ?? 1)
+            ->orderBy('id', 'desc')
+            ->get();
+            
+        $this->showHistoryModal = true;
+    }
+    
+    public function refundTransaction($transactionId)
+    {
+        if (!$this->activeShift) return;
+
+        $transaction = \App\Models\Transaction::where('id', $transactionId)
+            ->where('shift_id', $this->activeShift->id)
+            ->where('status', 'completed')
+            ->first();
+
+        if (!$transaction) {
+            $this->dispatch('notify', 'Transaksi tidak dapat di-refund!');
+            return;
+        }
+
+        // Void the transaction
+        $transaction->update(['status' => 'void', 'payment_status' => 'void']);
+
+        // Return stock and reverse stock movement
+        foreach ($transaction->items as $item) {
+            $product = \App\Models\Product::find($item->product_id);
+            if ($product) {
+                $product->increment('stock', $item->quantity);
+                
+                \App\Models\StockMovement::create([
+                    'product_id' => $product->id,
+                    'outlet_id' => $transaction->outlet_id,
+                    'user_id' => auth()->id() ?? 1,
+                    'type' => 'adjustment',
+                    'quantity' => abs($item->quantity), // positive to return stock
+                    'reference_type' => \App\Models\Transaction::class,
+                    'reference_id' => $transaction->id,
+                    'notes' => 'Refund Transaction: ' . $transaction->invoice_number,
+                ]);
+            }
+        }
+
+        // Remove payment
+        if ($transaction->payment) {
+            $transaction->payment->delete();
+        }
+
+        $this->loadTransactionHistory();
+        $this->dispatch('notify', 'Transaksi ' . $transaction->invoice_number . ' Berhasil Di-Refund!');
     }
 
     public function voidLastTransaction()
