@@ -13,6 +13,14 @@ return new class extends Migration
     {
         Schema::create('stock_adjustments', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('outlet_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->integer('expected_stock');
+            $table->integer('actual_stock');
+            $table->integer('difference');
+            $table->string('reason');
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

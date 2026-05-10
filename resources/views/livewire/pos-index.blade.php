@@ -43,6 +43,7 @@
                                 <h3 class="text-sm font-semibold text-gray-800 leading-tight mb-1 flex-1">{{ $product->name }}</h3>
                                 <div class="flex items-end justify-between mt-2">
                                     <span class="text-primary-600 font-bold text-sm">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
+                                    <span class="text-xs {{ $product->stock <= $product->reorder_point ? 'text-red-500 font-bold' : 'text-gray-500' }}">Stok: {{ $product->stock }}</span>
                                 </div>
                             </div>
                         </div>

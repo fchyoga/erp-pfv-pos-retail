@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            //
+            $table->integer('stock')->default(0)->after('selling_price');
+            $table->integer('reorder_point')->default(5)->after('stock');
+            $table->date('expired_date')->nullable()->after('reorder_point');
         });
     }
 
@@ -22,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            //
+            $table->dropColumn(['stock', 'reorder_point', 'expired_date']);
         });
     }
 };

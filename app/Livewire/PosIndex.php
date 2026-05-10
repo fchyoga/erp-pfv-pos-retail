@@ -91,7 +91,7 @@ class PosIndex extends Component
         ]);
 
         foreach ($cartData as $item) {
-            \App\Models\TransactionItem::create([
+            $transactionItem = \App\Models\TransactionItem::create([
                 'transaction_id' => $transaction->id,
                 'product_id' => $item['id'],
                 'product_name' => $item['name'],
@@ -100,6 +100,24 @@ class PosIndex extends Component
                 'subtotal' => $item['price'] * $item['qty'],
                 'note' => $item['note'] ?? null,
             ]);
+
+            // Deduct stock
+            $product = \App\Models\Product::find($item['id']);
+            if ($product) {
+                $product->decrement('stock', $item['qty']);
+
+                // Record Stock Movement
+                \App\Models\StockMovement::create([
+                    'product_id' => $product->id,
+                    'outlet_id' => $outletId,
+                    'user_id' => auth()->id() ?? 1,
+                    'type' => 'sale',
+                    'quantity' => -abs($item['qty']), // negative for sale
+                    'reference_type' => \App\Models\Transaction::class,
+                    'reference_id' => $transaction->id,
+                    'notes' => 'Sale from POS',
+                ]);
+            }
         }
 
         \App\Models\Payment::create([

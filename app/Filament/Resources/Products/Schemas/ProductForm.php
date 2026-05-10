@@ -31,6 +31,19 @@ class ProductForm
                     ->default(0.0)
                     ->prefix('$'),
                 TextInput::make('photo'),
+                TextInput::make('stock')
+                    ->label('Stok Saat Ini')
+                    ->numeric()
+                    ->default(0)
+                    ->required(),
+                TextInput::make('reorder_point')
+                    ->label('Batas Minimum Stok')
+                    ->numeric()
+                    ->default(5)
+                    ->required(),
+                \Filament\Forms\Components\DatePicker::make('expired_date')
+                    ->label('Tanggal Kadaluarsa')
+                    ->nullable(),
                 Toggle::make('is_active')
                     ->required(),
             ]);

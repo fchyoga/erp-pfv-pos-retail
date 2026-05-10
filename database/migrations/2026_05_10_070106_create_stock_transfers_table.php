@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('stock_transfers', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('from_outlet_id')->constrained('outlets')->cascadeOnDelete();
+            $table->foreignId('to_outlet_id')->constrained('outlets')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->integer('quantity');
+            $table->string('status')->default('completed'); // 'pending', 'completed'
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

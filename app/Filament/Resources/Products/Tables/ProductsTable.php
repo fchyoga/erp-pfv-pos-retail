@@ -32,7 +32,23 @@ class ProductsTable
                     ->money()
                     ->sortable(),
                 TextColumn::make('photo')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('stock')
+                    ->label('Stok')
+                    ->numeric()
+                    ->sortable()
+                    ->color(fn ($record) => $record->stock <= $record->reorder_point ? 'danger' : 'success')
+                    ->weight('bold'),
+                TextColumn::make('reorder_point')
+                    ->label('Batas Min.')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('expired_date')
+                    ->label('Expired')
+                    ->date()
+                    ->sortable(),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')
