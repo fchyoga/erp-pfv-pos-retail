@@ -91,18 +91,21 @@ class PosIndex extends Component
         ]);
 
         foreach ($cartData as $item) {
+            $product = \App\Models\Product::find($item['id']);
+            $costPrice = $product ? $product->cost_price : 0;
+
             $transactionItem = \App\Models\TransactionItem::create([
                 'transaction_id' => $transaction->id,
                 'product_id' => $item['id'],
                 'product_name' => $item['name'],
                 'quantity' => $item['qty'],
                 'unit_price' => $item['price'],
+                'cost_price' => $costPrice,
                 'subtotal' => $item['price'] * $item['qty'],
                 'note' => $item['note'] ?? null,
             ]);
 
             // Deduct stock
-            $product = \App\Models\Product::find($item['id']);
             if ($product) {
                 $product->decrement('stock', $item['qty']);
 
@@ -175,5 +178,50 @@ class PosIndex extends Component
         $this->actualEndingCash = 0;
         
         $this->dispatch('notify', 'Shift Berhasil Ditutup!');
+    }
+
+    public function voidLastTransaction()
+    {
+        if (!$this->activeShift) return;
+
+        $lastTransaction = \App\Models\Transaction::where('shift_id', $this->activeShift->id)
+            ->where('user_id', auth()->id() ?? 1)
+            ->where('status', 'completed')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$lastTransaction) {
+            $this->dispatch('notify', 'Tidak ada transaksi untuk dibatalkan!');
+            return;
+        }
+
+        // Void the transaction
+        $lastTransaction->update(['status' => 'void', 'payment_status' => 'void']);
+
+        // Return stock and reverse stock movement
+        foreach ($lastTransaction->items as $item) {
+            $product = \App\Models\Product::find($item->product_id);
+            if ($product) {
+                $product->increment('stock', $item->quantity);
+                
+                \App\Models\StockMovement::create([
+                    'product_id' => $product->id,
+                    'outlet_id' => $lastTransaction->outlet_id,
+                    'user_id' => auth()->id() ?? 1,
+                    'type' => 'adjustment',
+                    'quantity' => abs($item->quantity), // positive to return stock
+                    'reference_type' => \App\Models\Transaction::class,
+                    'reference_id' => $lastTransaction->id,
+                    'notes' => 'Void Transaction: ' . $lastTransaction->invoice_number,
+                ]);
+            }
+        }
+
+        // Remove payment
+        if ($lastTransaction->payment) {
+            $lastTransaction->payment->delete();
+        }
+
+        $this->dispatch('notify', 'Transaksi ' . $lastTransaction->invoice_number . ' Berhasil Di-Void!');
     }
 }

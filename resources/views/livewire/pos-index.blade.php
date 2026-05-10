@@ -142,7 +142,7 @@
                     Sync <span x-show="syncQueue.length > 0" x-text="'(' + syncQueue.length + ')'"></span>
                 </button>
                 <button onclick="window.print()" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-lg transition text-sm">
-                    Print Bill
+                    Print / Reprint
                 </button>
             </div>
             
@@ -158,7 +158,11 @@
             </div>
             
             @if($activeShift)
-            <div class="mt-4 pt-4 border-t border-gray-200">
+            <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <button wire:click="voidLastTransaction" wire:confirm="Apakah Anda yakin ingin melakukan Void (Membatalkan) transaksi terakhir?" class="w-full bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2 px-4 rounded-lg transition text-sm flex justify-center items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Void Transaksi Terakhir
+                </button>
                 <button wire:click="$set('showCloseShiftModal', true)" class="w-full bg-red-50 text-red-600 hover:bg-red-100 font-semibold py-2 px-4 rounded-lg transition text-sm">
                     Tutup Shift Kasir
                 </button>

@@ -24,13 +24,15 @@ class ProductForm
                     ->required()
                     ->numeric()
                     ->default(0.0)
-                    ->prefix('$'),
+                    ->prefix('Rp'),
                 TextInput::make('selling_price')
                     ->required()
                     ->numeric()
                     ->default(0.0)
-                    ->prefix('$'),
-                TextInput::make('photo'),
+                    ->prefix('Rp'),
+                \Filament\Forms\Components\FileUpload::make('photo')
+                    ->image()
+                    ->directory('products'),
                 TextInput::make('stock')
                     ->label('Stok Saat Ini')
                     ->numeric()

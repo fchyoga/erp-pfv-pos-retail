@@ -26,10 +26,10 @@ class ProductsTable
                 TextColumn::make('barcode')
                     ->searchable(),
                 TextColumn::make('cost_price')
-                    ->money()
+                    ->money('IDR')
                     ->sortable(),
                 TextColumn::make('selling_price')
-                    ->money()
+                    ->money('IDR')
                     ->sortable(),
                 TextColumn::make('photo')
                     ->searchable()
@@ -64,6 +64,11 @@ class ProductsTable
                 //
             ])
             ->recordActions([
+                \Filament\Actions\Action::make('print_barcode')
+                    ->label('Print Barcode')
+                    ->icon('heroicon-o-qr-code')
+                    ->url(fn ($record) => url('/admin/products/' . $record->id . '/print-barcode'))
+                    ->openUrlInNewTab(),
                 EditAction::make(),
             ])
             ->toolbarActions([
