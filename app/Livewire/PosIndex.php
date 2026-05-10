@@ -58,7 +58,7 @@ class PosIndex extends Component
         ])->layout('components.layouts.app');
     }
 
-    public function syncTransaction($cartData, $subtotal, $tax, $total)
+    public function syncTransaction($cartData, $subtotal, $tax, $total, $paymentMethod = 'cash')
     {
         // Ensure active shift exists
         if (!$this->activeShift) {
@@ -96,7 +96,7 @@ class PosIndex extends Component
 
         \App\Models\Payment::create([
             'transaction_id' => $transaction->id,
-            'method' => 'cash',
+            'method' => $paymentMethod,
             'amount' => $total,
             'change' => 0,
         ]);

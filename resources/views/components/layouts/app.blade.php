@@ -35,6 +35,12 @@
                 isOffline: !navigator.onLine,
                 lastReceipt: null,
                 
+                // Payment State
+                showCheckoutModal: false,
+                paymentMethod: 'cash',
+                cashAmount: '',
+                changeAmount: 0,
+                
                 async init() {
                     this.cart = await localforage.getItem('pos_cart') || [];
                     this.syncQueue = await localforage.getItem('pos_sync_queue') || [];
@@ -44,6 +50,14 @@
                         localforage.setItem('pos_cart', val);
                         this.calculateTotals();
                     }, { deep: true });
+                    
+                    this.$watch('cashAmount', (val) => {
+                        this.calculateChange();
+                    });
+                    
+                    this.$watch('paymentMethod', (val) => {
+                        this.calculateChange();
+                    });
                     
                     window.addEventListener('online', () => {
                         this.isOffline = false;
@@ -63,6 +77,25 @@
                     this.subtotal = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
                     this.tax = this.subtotal * 0.11;
                     this.total = this.subtotal + this.tax;
+                    this.calculateChange();
+                },
+                
+                calculateChange() {
+                    if (this.paymentMethod === 'cash') {
+                        let amount = parseFloat(this.cashAmount) || 0;
+                        this.changeAmount = amount - this.total;
+                    } else {
+                        this.changeAmount = 0;
+                    }
+                },
+                
+                setExactAmount() {
+                    this.cashAmount = this.total;
+                },
+                
+                quickAmount(add) {
+                    let current = parseFloat(this.cashAmount) || 0;
+                    this.cashAmount = current + add;
                 },
                 
                 addToCart(productId) {
@@ -97,8 +130,21 @@
                     this.cart = [];
                 },
                 
-                async checkout() {
+                openCheckout() {
                     if (this.cart.length === 0) return;
+                    this.paymentMethod = 'cash';
+                    this.cashAmount = '';
+                    this.changeAmount = -this.total;
+                    this.showCheckoutModal = true;
+                },
+                
+                async processCheckout() {
+                    if (this.paymentMethod === 'cash' && this.changeAmount < 0) {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: ['Uang yang dibayarkan kurang!'] }));
+                        return;
+                    }
+                    
+                    this.showCheckoutModal = false;
                     
                     let invoiceNumber = 'INV-' + new Date().toISOString().replace(/[-:T.]/g, '').substring(0, 14);
 
@@ -108,6 +154,9 @@
                         subtotal: this.subtotal,
                         tax: this.tax,
                         total: this.total,
+                        paymentMethod: this.paymentMethod,
+                        cashAmount: this.paymentMethod === 'cash' ? (parseFloat(this.cashAmount) || 0) : this.total,
+                        changeAmount: this.changeAmount,
                         date: new Date().toLocaleString('id-ID')
                     };
 
@@ -118,6 +167,7 @@
                             subtotal: this.subtotal,
                             tax: this.tax,
                             total: this.total,
+                            paymentMethod: this.paymentMethod,
                             timestamp: new Date().toISOString()
                         });
                         await localforage.setItem('pos_sync_queue', this.syncQueue);
@@ -127,7 +177,7 @@
                     } else {
                         // Call livewire method syncTransaction manually
                         let livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.tax, this.total);
+                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.tax, this.total, this.paymentMethod);
                         if (success) {
                             this.clearCart();
                             setTimeout(() => window.print(), 500); // Auto print
@@ -144,7 +194,7 @@
                     for (let i = 0; i < this.syncQueue.length; i++) {
                         let tx = this.syncQueue[i];
                         try {
-                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.tax, tx.total);
+                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.tax, tx.total, tx.paymentMethod || 'cash');
                             if (success) {
                                 successfulIndexes.push(i);
                             }

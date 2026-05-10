@@ -125,7 +125,7 @@
                 <span class="font-bold text-2xl text-primary-600">Rp <span x-text="formatCurrency(total)"></span></span>
             </div>
 
-            <button @click="checkout" :disabled="cart.length === 0" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-primary-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="openCheckout" :disabled="cart.length === 0" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-primary-600/30 transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 BAYAR SEKARANG
             </button>
@@ -215,6 +215,86 @@
         </div>
     </div>
     @endif
+
+    <!-- Checkout Modal -->
+    <div x-show="showCheckoutModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
+            <div x-show="showCheckoutModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showCheckoutModal = false"></div>
+
+            <div x-show="showCheckoutModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+                <div class="bg-white px-6 pt-6 pb-6">
+                    <div class="flex justify-between items-center mb-5">
+                        <h3 class="text-2xl leading-6 font-bold text-gray-900" id="modal-title">Pembayaran</h3>
+                        <button @click="showCheckoutModal = false" class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Total Amount -->
+                    <div class="bg-primary-50 rounded-xl p-4 mb-6 border border-primary-100 text-center">
+                        <p class="text-sm font-medium text-primary-600 mb-1">Total Tagihan</p>
+                        <p class="text-4xl font-black text-primary-700">Rp <span x-text="formatCurrency(total)"></span></p>
+                    </div>
+
+                    <!-- Payment Method Tabs -->
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button @click="paymentMethod = 'cash'" :class="paymentMethod === 'cash' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'" class="border rounded-lg py-2.5 font-semibold transition">
+                                Tunai
+                            </button>
+                            <button @click="paymentMethod = 'qris'" :class="paymentMethod === 'qris' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'" class="border rounded-lg py-2.5 font-semibold transition">
+                                QRIS
+                            </button>
+                            <button @click="paymentMethod = 'transfer'" :class="paymentMethod === 'transfer' ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'" class="border rounded-lg py-2.5 font-semibold transition">
+                                Transfer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cash Input Area (Only visible if cash) -->
+                    <div x-show="paymentMethod === 'cash'" x-collapse>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Uang Diterima (Rp)</label>
+                        <input type="number" x-model="cashAmount" class="w-full bg-white border border-gray-300 text-gray-900 text-2xl font-bold rounded-lg focus:ring-primary-500 focus:border-primary-500 block p-3 outline-none text-right mb-3" placeholder="0">
+                        
+                        <!-- Quick Cash Buttons -->
+                        <div class="grid grid-cols-4 gap-2 mb-6">
+                            <button @click="setExactAmount" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded border border-gray-200 text-sm">Pas</button>
+                            <button @click="quickAmount(10000)" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded border border-gray-200 text-sm">+10k</button>
+                            <button @click="quickAmount(50000)" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded border border-gray-200 text-sm">+50k</button>
+                            <button @click="quickAmount(100000)" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 rounded border border-gray-200 text-sm">+100k</button>
+                        </div>
+
+                        <!-- Change Amount -->
+                        <div class="flex justify-between items-center py-3 border-t border-gray-200">
+                            <span class="text-base font-semibold text-gray-600">Kembalian:</span>
+                            <span :class="changeAmount < 0 ? 'text-red-500' : 'text-green-600'" class="text-2xl font-bold">
+                                Rp <span x-text="formatCurrency(changeAmount)"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- QRIS Area -->
+                    <div x-show="paymentMethod === 'qris'" x-collapse class="text-center py-4">
+                        <div class="bg-gray-100 p-4 rounded-lg inline-block mb-3 border border-gray-200">
+                            <!-- Placeholder QR Code -->
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=DUMMY_QRIS_CODE" alt="QRIS" class="w-32 h-32 mx-auto mix-blend-multiply">
+                        </div>
+                        <p class="text-sm text-gray-500">Minta pelanggan scan QRIS ini.</p>
+                    </div>
+
+                </div>
+                <div class="bg-gray-50 px-6 py-4 flex flex-row-reverse rounded-b-2xl">
+                    <button @click="processCheckout" :disabled="paymentMethod === 'cash' && changeAmount < 0" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3.5 bg-primary-600 text-lg font-bold text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Konfirmasi Pembayaran
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Print Receipt Template -->
     <div id="print-receipt" x-show="lastReceipt">
