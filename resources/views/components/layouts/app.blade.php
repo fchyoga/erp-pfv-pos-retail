@@ -26,6 +26,7 @@
         
         document.addEventListener('alpine:init', () => {
             Alpine.data('posApp', (taxPct = 11, discountPct = 0) => ({
+                mobileTab: 'products',
                 get products() { 
                     const el = document.getElementById('pos-root-element');
                     return el ? JSON.parse(el.dataset.products) : {}; 
@@ -391,9 +392,10 @@
             }
             
             /* Remove overflow restrictions for printing */
-            #app-wrapper, body, main {
+            #app-wrapper, body, main, #pos-root-element {
                 height: auto !important;
                 overflow: visible !important;
+                display: block !important;
             }
             
             /* Print elements */

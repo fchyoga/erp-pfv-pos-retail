@@ -2,7 +2,7 @@
      id="pos-root-element"
      :class="{ 'is-printing-rekap': printingRekap }"
      data-products="{{ json_encode($products->keyBy('id')) }}"
-     class="flex h-full w-full relative">
+     class="flex flex-col lg:flex-row h-full w-full relative overflow-hidden">
     
     <!-- Offline Indicator -->
     <div x-show="isOffline" style="display: none;" class="absolute top-0 left-0 right-0 bg-orange-500 text-white text-center py-1 text-sm font-bold z-50">
@@ -11,7 +11,7 @@
     </div>
 
     <!-- Left Panel: Products Grid -->
-    <div class="flex-1 flex flex-col bg-gray-50 h-full border-r border-gray-200 mt-6 left-panel-ui">
+    <div :class="mobileTab === 'products' ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col bg-gray-50 h-full border-r border-gray-200 mt-0 lg:mt-6 left-panel-ui relative w-full lg:w-auto">
         
         <!-- Search & Category Filter (Livewire still handles search, but we just re-render grid) -->
         <div class="p-4 bg-white shadow-sm flex gap-3 z-10">
@@ -60,16 +60,27 @@
                 </div>
             @endif
         </div>
+        
+        <!-- Mobile FAB to open cart -->
+        <button @click="mobileTab = 'cart'" class="lg:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 transition hover:bg-primary-700 z-40 active:scale-95 print:hidden">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            Keranjang <span x-show="cart.length > 0" class="bg-white text-primary-600 rounded-full px-2 py-0.5 text-xs ml-1" x-text="cart.length"></span>
+        </button>
     </div>
 
     <!-- Right Panel: Cart -->
-    <div class="w-96 bg-white flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20 mt-6 right-panel-ui">
+    <div :class="mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'" class="w-full lg:w-96 bg-white flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-30 lg:z-20 mt-0 lg:mt-6 right-panel-ui">
         
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-            <h2 class="font-bold text-gray-800 flex items-center gap-2">
-                <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                Pesanan
-            </h2>
+            <div class="flex items-center gap-2">
+                <button @click="mobileTab = 'products'" class="lg:hidden text-gray-500 hover:text-gray-800 p-1 bg-gray-200 rounded-full active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h2 class="font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-500 hidden lg:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Pesanan
+                </h2>
+            </div>
             <button @click="clearCart" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition">
                 Kosongkan
             </button>
@@ -180,7 +191,7 @@
             @if($activeShift)
             <div class="mt-4 pt-4 border-t border-gray-200 space-y-2">
                 <div class="flex gap-2">
-                    <button wire:click="voidLastTransaction" wire:confirm="Apakah Anda yakin ingin melakukan Void (Membatalkan) transaksi terakhir?" class="flex-1 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2 px-2 rounded-lg transition text-xs flex justify-center items-center gap-1">
+                    <button wire:click="initiateVoid" class="flex-1 bg-white border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2 px-2 rounded-lg transition text-xs flex justify-center items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Void Terakhir
                     </button>
@@ -200,7 +211,7 @@
     <!-- Modals code unchanged, appended below -->
     @if($showOpenShiftModal)
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-[95%] max-w-md overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-primary-600 px-6 py-4">
                 <h3 class="text-xl font-bold text-white">Buka Shift Kasir</h3>
                 <p class="text-primary-100 text-sm mt-1">Masukkan modal awal (uang di laci) untuk memulai.</p>
@@ -220,7 +231,7 @@
 
     @if($showCloseShiftModal)
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-[95%] max-w-md overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-red-600 px-6 py-4 flex justify-between items-center">
                 <div>
                     <h3 class="text-xl font-bold text-white">Tutup Shift Kasir</h3>
@@ -275,7 +286,7 @@
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showCheckoutModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showCheckoutModal = false"></div>
 
-            <div x-show="showCheckoutModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-full">
+            <div x-show="showCheckoutModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md w-[95%] sm:w-full">
                 <div class="bg-white px-6 pt-6 pb-6">
                     <div class="flex justify-between items-center mb-5">
                         <h3 class="text-2xl leading-6 font-bold text-gray-900" id="modal-title">Pembayaran</h3>
@@ -354,7 +365,7 @@
     <div x-show="showItemDiscountModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showItemDiscountModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showItemDiscountModal = false"></div>
-            <div x-show="showItemDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+            <div x-show="showItemDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-[95%] sm:w-full">
                 <div class="bg-white px-6 pt-6 pb-6">
                     <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Diskon per Item</h3>
                     
@@ -393,7 +404,7 @@
     <div x-show="showTransactionDiscountModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showTransactionDiscountModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showTransactionDiscountModal = false"></div>
-            <div x-show="showTransactionDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+            <div x-show="showTransactionDiscountModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-[95%] sm:w-full">
                 <div class="bg-white px-6 pt-6 pb-6">
                     <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Diskon Total (Keranjang)</h3>
                     
@@ -432,7 +443,7 @@
     <div x-show="showSuspendModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showSuspendModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendModal = false"></div>
-            <div x-show="showSuspendModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-full">
+            <div x-show="showSuspendModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm w-[95%] sm:w-full">
                 <div class="bg-white px-6 pt-6 pb-6">
                     <h3 class="text-xl leading-6 font-bold text-gray-900 mb-4">Tahan Transaksi (Hold)</h3>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pelanggan / Catatan</label>
@@ -454,7 +465,7 @@
     <div x-show="showSuspendListModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto print:hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
             <div x-show="showSuspendListModal" x-transition.opacity class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" @click="showSuspendListModal = false"></div>
-            <div x-show="showSuspendListModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div x-show="showSuspendListModal" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-[95%] sm:w-full">
                 <div class="bg-white px-6 pt-6 pb-4">
                     <div class="flex justify-between items-center mb-5">
                         <h3 class="text-xl leading-6 font-bold text-gray-900">Daftar Transaksi Ditahan</h3>
@@ -498,7 +509,7 @@
     <!-- Transaction History Modal -->
     @if($showHistoryModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50 print:hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div class="bg-white rounded-2xl shadow-xl w-[95%] max-w-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-b border-gray-200">
                 <h3 class="text-xl font-bold text-gray-800">History Shift Aktif</h3>
                 <button wire:click="$set('showHistoryModal', false)" class="text-gray-400 hover:text-gray-600">
@@ -531,7 +542,7 @@
                                 <td class="px-6 py-3">Rp {{ number_format($tx->total, 0, ',', '.') }}</td>
                                 <td class="px-6 py-3">
                                     @if($tx->status === 'completed')
-                                    <button wire:click="refundTransaction({{ $tx->id }})" wire:confirm="Anda yakin ingin me-Refund/Void transaksi {{ $tx->invoice_number }}? Semua stok akan dikembalikan." class="text-red-600 hover:text-red-900 font-medium text-xs px-2 py-1 border border-red-600 rounded hover:bg-red-50 transition">
+                                    <button wire:click="initiateRefund({{ $tx->id }})" class="text-red-600 hover:text-red-900 font-medium text-xs px-2 py-1 border border-red-600 rounded hover:bg-red-50 transition">
                                         Refund
                                     </button>
                                     @endif
@@ -553,11 +564,40 @@
         </div>
     </div>
     @endif
+    
+    <!-- PIN Verification Modal -->
+    @if($showPinModal)
+    <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-[95%] max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-red-600 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white">Otorisasi Supervisor</h3>
+                <button wire:click="$set('showPinModal', false)" class="text-white hover:text-red-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 text-sm mb-4">Masukkan 6-digit PIN Supervisor/Admin untuk menyetujui transaksi pembatalan (Void/Refund).</p>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">PIN Supervisor</label>
+                    <input type="password" wire:model.live="supervisorPin" maxlength="6" class="w-full bg-gray-50 border border-gray-300 text-center text-gray-900 text-2xl tracking-widest font-bold rounded-lg focus:ring-red-500 focus:border-red-500 block p-3 outline-none" placeholder="******">
+                </div>
+                <div class="flex space-x-3">
+                    <button wire:click="$set('showPinModal', false)" class="flex-1 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold py-3 rounded-lg shadow-sm transition">
+                        Batal
+                    </button>
+                    <button wire:click="verifyPinAndExecute" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition" {{ strlen($supervisorPin) < 4 ? 'disabled' : '' }}>
+                        Setujui
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Print Receipt Template -->
     <div id="print-receipt">
         <div style="text-align: center; margin-bottom: 10px;">
-            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Provit Farm Village</h2>
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">{{ $receiptHeader }}</h2>
             <p style="margin: 0; font-size: 12px;">Desa Wisata PFV</p>
         </div>
         
@@ -614,7 +654,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 20px; font-size: 12px;">
-            <p style="margin: 0;">Terima Kasih atas kunjungan Anda!</p>
+            <p style="margin: 0;">{{ $receiptFooter }}</p>
             <p style="margin: 0;">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.</p>
         </div>
     </div>
@@ -622,7 +662,7 @@
     <!-- Print Rekap Shift Template -->
     <div id="print-rekap">
         <div style="text-align: center; margin-bottom: 10px;">
-            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Provit Farm Village</h2>
+            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">{{ $receiptHeader }}</h2>
             <p style="margin: 0; font-size: 12px;">REKAPITULASI SHIFT</p>
         </div>
         
@@ -668,6 +708,7 @@
 
         <div style="text-align: center; margin-top: 20px; font-size: 12px;">
             <p style="margin: 0;">-- End of Report --</p>
+            <p style="margin: 0; margin-top: 5px;">{{ $receiptFooter }}</p>
         </div>
     </div>
 </div>

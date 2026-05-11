@@ -24,6 +24,14 @@ class UserForm
                     ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
                     ->dehydrated(fn ($state) => filled($state))
                     ->required(fn (string $context): bool => $context === 'create'),
+                TextInput::make('pin')
+                    ->label('Supervisor PIN (Optional)')
+                    ->password()
+                    ->revealable()
+                    ->dehydrateStateUsing(fn ($state) => \Illuminate\Support\Facades\Hash::make($state))
+                    ->dehydrated(fn ($state) => filled($state))
+                    ->maxLength(6)
+                    ->helperText('PIN 6 digit untuk menyetujui transaksi seperti Void/Refund.'),
                 \Filament\Forms\Components\Select::make('outlet_id')
                     ->relationship('outlet', 'name')
                     ->searchable()

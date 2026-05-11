@@ -19,6 +19,16 @@ class PosIndex extends Component
     public $showHistoryModal = false;
     public $shiftTransactions = [];
     public $paymentSummary = ['cash' => 0, 'qris' => 0, 'transfer' => 0];
+    
+    // Receipt settings
+    public $receiptHeader = 'Provit Farm Village';
+    public $receiptFooter = 'Terima Kasih atas kunjungan Anda!';
+    
+    // PIN Approval State
+    public $showPinModal = false;
+    public $supervisorPin = '';
+    public $pendingAction = null; // 'void' or 'refund'
+    public $pendingTransactionId = null;
 
     public function mount()
     {
@@ -33,6 +43,18 @@ class PosIndex extends Component
 
         if (!$this->activeShift) {
             $this->showOpenShiftModal = true;
+        }
+        
+        // Load Default Printer
+        if ($outletId) {
+            $defaultPrinter = \App\Models\Printer::where('outlet_id', $outletId)
+                ->where('is_default', true)
+                ->first();
+                
+            if ($defaultPrinter) {
+                if ($defaultPrinter->receipt_header) $this->receiptHeader = $defaultPrinter->receipt_header;
+                if ($defaultPrinter->receipt_footer) $this->receiptFooter = $defaultPrinter->receipt_footer;
+            }
         }
     }
 
@@ -225,7 +247,56 @@ class PosIndex extends Component
         $this->showHistoryModal = true;
     }
     
-    public function refundTransaction($transactionId)
+    public function initiateVoid()
+    {
+        $this->pendingAction = 'void';
+        $this->supervisorPin = '';
+        $this->showPinModal = true;
+    }
+    
+    public function initiateRefund($transactionId)
+    {
+        $this->pendingAction = 'refund';
+        $this->pendingTransactionId = $transactionId;
+        $this->supervisorPin = '';
+        $this->showPinModal = true;
+    }
+    
+    public function verifyPinAndExecute()
+    {
+        // Get all users with Super Admin or Admin role who have a PIN set
+        $admins = \App\Models\User::whereHas('roles', function($q) {
+            $q->whereIn('name', ['Super Admin', 'Admin']);
+        })->whereNotNull('pin')->get();
+        
+        $isValid = false;
+        foreach ($admins as $admin) {
+            if (\Illuminate\Support\Facades\Hash::check($this->supervisorPin, $admin->pin)) {
+                $isValid = true;
+                break;
+            }
+        }
+        
+        if (!$isValid) {
+            $this->dispatch('notify', 'PIN Supervisor salah atau tidak terdaftar!');
+            $this->supervisorPin = '';
+            return;
+        }
+        
+        $this->showPinModal = false;
+        
+        if ($this->pendingAction === 'void') {
+            $this->executeVoidLastTransaction();
+        } elseif ($this->pendingAction === 'refund') {
+            $this->executeRefundTransaction($this->pendingTransactionId);
+        }
+        
+        $this->pendingAction = null;
+        $this->pendingTransactionId = null;
+        $this->supervisorPin = '';
+    }
+    
+    public function executeRefundTransaction($transactionId)
     {
         if (!$this->activeShift) return;
 
@@ -270,7 +341,7 @@ class PosIndex extends Component
         $this->dispatch('notify', 'Transaksi ' . $transaction->invoice_number . ' Berhasil Di-Refund!');
     }
 
-    public function voidLastTransaction()
+    public function executeVoidLastTransaction()
     {
         if (!$this->activeShift) return;
 
