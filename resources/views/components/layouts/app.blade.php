@@ -289,6 +289,7 @@
                     if (this.isOffline) {
                         this.syncQueue.push({
                             id: Date.now(),
+                            invoice: invoiceNumber,
                             cart: JSON.parse(JSON.stringify(this.cart)),
                             subtotal: this.subtotal,
                             discount: this.discountAmount,
@@ -306,7 +307,7 @@
                     } else {
                         // Call livewire method syncTransaction manually
                         let livewireComponent = Livewire.find(document.querySelector('[wire\\:id]').getAttribute('wire:id'));
-                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.discountAmount, this.transactionDiscountType, this.tax, this.total, this.paymentMethod, this.changeAmount);
+                        let success = await livewireComponent.syncTransaction(this.cart, this.subtotal, this.discountAmount, this.transactionDiscountType, this.tax, this.total, this.paymentMethod, this.changeAmount, invoiceNumber);
                         if (success) {
                             this.clearCart();
                             setTimeout(() => window.print(), 500); // Auto print
@@ -323,7 +324,7 @@
                     for (let i = 0; i < this.syncQueue.length; i++) {
                         let tx = this.syncQueue[i];
                         try {
-                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.discount || 0, tx.discountType || 'fixed', tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0);
+                            let success = await livewireComponent.syncTransaction(tx.cart, tx.subtotal, tx.discount || 0, tx.discountType || 'fixed', tx.tax, tx.total, tx.paymentMethod || 'cash', tx.changeAmount || 0, tx.invoice);
                             if (success) {
                                 successfulIndexes.push(i);
                             }
@@ -373,6 +374,7 @@
         /* Print styles for thermal receipt */
         @media print {
             @page {
+                size: 58mm auto;
                 margin: 0; /* Remove default browser margins */
             }
             body {

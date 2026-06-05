@@ -1,0 +1,233 @@
+/* Custom premium theme styling for PFV Retail Dashboard */
+
+/* Font Family styling fallback */
+body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11" !important;
+}
+
+/* Sidebar Custom Styling */
+.fi-sidebar {
+    background-color: #fcfdfe !important;
+    border-right: 1px solid #eef2f6 !important;
+}
+
+/* Sidebar Brand Styling */
+.fi-sidebar-header {
+    background-color: #f1fbf4 !important;
+    border-bottom: 1px solid #dcfce7 !important;
+    padding: 1.5rem !important;
+}
+
+.fi-sidebar-header a {
+    color: #16a34a !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.025em !important;
+    font-size: 1.25rem !important;
+}
+
+/* Sidebar Items styling */
+.fi-sidebar-item-button {
+    border-radius: 12px !important;
+    transition: all 0.2s ease !important;
+}
+
+.fi-sidebar-item-active {
+    background-color: #e8f7ec !important;
+    color: #15803d !important;
+}
+
+.fi-sidebar-item-active svg {
+    color: #16a34a !important;
+}
+
+/* Main Content Area */
+.fi-main {
+    background-color: #f8fafc !important;
+}
+
+/* Cards & Widgets Styling */
+.fi-wi-stats-overview-stat {
+    border-radius: 16px !important;
+    border: 1px solid #eef2f6 !important;
+    box-shadow: 0 4px 12px -2px rgba(22, 163, 74, 0.04) !important;
+    background-color: #ffffff !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.fi-wi-stats-overview-stat:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 16px -2px rgba(22, 163, 74, 0.08) !important;
+}
+
+.fi-section {
+    border-radius: 16px !important;
+    border: 1px solid #eef2f6 !important;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.02) !important;
+    background-color: #ffffff !important;
+    overflow: hidden !important;
+}
+
+.fi-ta-ctn {
+    border-radius: 16px !important;
+    border: 1px solid #eef2f6 !important;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.02) !important;
+    background-color: #ffffff !important;
+    overflow: visible !important; /* Allow dropdown filters to overflow without clipping */
+}
+
+/* Ensure inner table elements match the rounded container corners */
+.fi-ta-header-ctn,
+.fi-ta-header-toolbar,
+.fi-ta-header {
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+}
+
+.fi-ta-footer,
+.fi-ta-pagination {
+    border-bottom-left-radius: 16px !important;
+    border-bottom-right-radius: 16px !important;
+}
+
+/* Table Custom Headers */
+.fi-ta-header {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.fi-ta-header-cell {
+    background-color: #f8fafc !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.05em !important;
+    color: #64748b !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+/* Table Rows */
+.fi-ta-record {
+    transition: background-color 0.15s ease !important;
+}
+
+.fi-ta-record:hover {
+    background-color: #f9fdfa !important;
+}
+
+/* Buttons Styling */
+.fi-btn {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Modal Styling */
+.fi-modal-window {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+}
+
+.fi-modal-header {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 1.25rem !important;
+}
+
+/* Report Stats Overview Cards Custom Grid & Card layout */
+.report-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .report-stats-grid.cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .report-stats-grid.cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.report-stat-card {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid #eef2f6;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.report-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -2px rgba(22, 163, 74, 0.08);
+}
+
+.report-stat-icon-wrapper {
+    padding: 0.75rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Colors for icon wrappers */
+.report-stat-icon-wrapper.bg-emerald {
+    background-color: #e8f7ec;
+    color: #16a34a;
+}
+
+.report-stat-icon-wrapper.bg-blue {
+    background-color: #eff6ff;
+    color: #3b82f6;
+}
+
+.report-stat-icon-wrapper.bg-violet {
+    background-color: #f5f3ff;
+    color: #8b5cf6;
+}
+
+.report-stat-icon-wrapper.bg-amber {
+    background-color: #fffbeb;
+    color: #d97706;
+}
+
+.report-stat-icon-wrapper.bg-orange {
+    background-color: #fff7ed;
+    color: #ea580c;
+}
+
+.report-stat-icon-wrapper.bg-red {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.report-stat-icon-wrapper.bg-gray {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+/* Card typography */
+.report-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.report-stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}

@@ -32,7 +32,7 @@ class PosIndex extends Component
 
     public function mount()
     {
-        $userId = auth()->id() ?? 1;
+        $userId = auth()->id();
         $outletId = auth()->user()?->outlet_id ?? \App\Models\Outlet::first()?->id ?? 1;
 
         
@@ -90,7 +90,7 @@ class PosIndex extends Component
         ])->layout('components.layouts.app');
     }
 
-    public function syncTransaction($cartData, $subtotal, $discount, $discountType, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0)
+    public function syncTransaction($cartData, $subtotal, $discount, $discountType, $tax, $total, $paymentMethod = 'cash', $changeAmount = 0, $invoiceNumber = null)
     {
         // Ensure active shift exists
         if (!$this->activeShift) {
@@ -99,7 +99,7 @@ class PosIndex extends Component
         }
 
         // Generate Invoice Number
-        $invoice = 'INV-' . date('YmdHis') . '-' . rand(1000, 9999);
+        $invoice = $invoiceNumber ?? ('INV-' . date('YmdHis') . '-' . rand(1000, 9999));
 
         $outletId = auth()->user()?->outlet_id ?? \App\Models\Outlet::first()?->id ?? 1;
         
@@ -264,9 +264,8 @@ class PosIndex extends Component
     
     public function verifyPinAndExecute()
     {
-        // Get all users with Super Admin or Admin role who have a PIN set
         $admins = \App\Models\User::whereHas('roles', function($q) {
-            $q->whereIn('name', ['Super Admin', 'Admin']);
+            $q->whereIn('name', ['super_admin', 'Super Admin', 'Admin']);
         })->whereNotNull('pin')->get();
         
         $isValid = false;
@@ -296,7 +295,7 @@ class PosIndex extends Component
         $this->supervisorPin = '';
     }
     
-    public function executeRefundTransaction($transactionId)
+    protected function executeRefundTransaction($transactionId)
     {
         if (!$this->activeShift) return;
 
@@ -341,7 +340,7 @@ class PosIndex extends Component
         $this->dispatch('notify', 'Transaksi ' . $transaction->invoice_number . ' Berhasil Di-Refund!');
     }
 
-    public function executeVoidLastTransaction()
+    protected function executeVoidLastTransaction()
     {
         if (!$this->activeShift) return;
 

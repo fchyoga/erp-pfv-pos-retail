@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    use RefreshDatabase;
     /**
      * A basic test example.
      */
@@ -14,6 +15,42 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
+        $response->assertStatus(302);
+        $response->assertRedirect('/pos');
+    }
+
+    public function test_pos_page_requires_authentication(): void
+    {
+        $response = $this->get('/pos');
+
+        $response->assertStatus(302);
+        $response->assertRedirect('/admin/login');
+    }
+
+    public function test_pos_page_loads_for_authenticated_users(): void
+    {
+        $user = \App\Models\User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/pos');
+
         $response->assertStatus(200);
+    }
+
+    public function test_report_pages_load_successfully(): void
+    {
+        $user = \App\Models\User::factory()->create();
+
+        $reports = [
+            '/admin/best-seller-report',
+            '/admin/payment-summary-report',
+            '/admin/profit-margin-report',
+            '/admin/slow-moving-report',
+            '/admin/sales-report',
+        ];
+
+        foreach ($reports as $reportUrl) {
+            $response = $this->actingAs($user)->get($reportUrl);
+            $response->assertStatus(200);
+        }
     }
 }

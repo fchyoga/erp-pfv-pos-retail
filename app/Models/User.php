@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 
-#[Fillable(['name', 'email', 'password', 'outlet_id'])]
+#[Fillable(['name', 'email', 'password', 'outlet_id', 'pin', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles;
@@ -34,5 +36,10 @@ class User extends Authenticatable
     public function outlet()
     {
         return $this->belongsTo(Outlet::class);
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 }

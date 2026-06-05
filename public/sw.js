@@ -35,9 +35,9 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // If request is for an API or Livewire backend call, try network first, then fallback to offline handling (which we do in JS)
-  if (event.request.url.includes('/livewire/') || event.request.method !== 'GET') {
-    return; // Let the browser handle it (it will fail if offline, which our JS will catch)
+  // Only bypass non-GET requests (like POST requests for Livewire action updates)
+  if (event.request.method !== 'GET') {
+    return;
   }
 
   // Network First, fallback to cache

@@ -597,8 +597,9 @@
     <!-- Print Receipt Template -->
     <div id="print-receipt">
         <div style="text-align: center; margin-bottom: 10px;">
-            <h2 style="margin: 0; font-size: 18px; font-weight: bold;">{{ $receiptHeader }}</h2>
-            <p style="margin: 0; font-size: 12px;">Desa Wisata PFV</p>
+            <img src="{{ asset('logo.png') }}" style="max-height: 50px; width: auto; margin: 0 auto 5px auto; display: block;" alt="Logo">
+            <h2 style="margin: 0; font-size: 16px; font-weight: bold;">{{ $receiptHeader }}</h2>
+            <p style="margin: 0; font-size: 11px;">Wisata Provit Farm Village</p>
         </div>
         
         <div style="border-bottom: 1px dashed #000; margin-bottom: 10px; padding-bottom: 5px;">

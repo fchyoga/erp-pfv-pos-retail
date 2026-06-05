@@ -31,6 +31,27 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => \Filament\Support\Colors\Color::Green,
             ])
+            ->brandName('PFV Retail')
+            ->brandLogo(fn () => new \Illuminate\Support\HtmlString('
+                <div style="display: flex !important; align-items: center !important; gap: 10px !important; flex-direction: row !important; flex-wrap: nowrap !important;">
+                    <img src="' . asset('logo.png') . '" alt="Logo" style="height: 2.5rem !important; width: auto !important; object-fit: contain !important; display: inline-block !important; margin: 0 !important; padding: 0 !important; flex-shrink: 0 !important;" />
+                    <span style="font-size: 1.25rem !important; font-weight: 800 !important; color: #16a34a !important; letter-spacing: -0.025em !important; white-space: nowrap !important; display: inline-block !important; font-family: \'Outfit\', sans-serif !important;">PFV Retail</span>
+                </div>
+            '))
+            ->font('Outfit')
+            ->assets([
+                \Filament\Support\Assets\Css::make('custom-filament-theme', asset('css/custom-filament.css')),
+            ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn (): string => '<link rel="stylesheet" href="' . asset('css/custom-filament.css') . '?v=' . time() . '">'
+            )
+            ->navigationItems([
+                \Filament\Navigation\NavigationItem::make('POS Kasir')
+                    ->url('/pos', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-shopping-cart')
+                    ->sort(1),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -50,6 +71,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\RedirectCashierToPos::class,
             ])
             ->authMiddleware([
                 Authenticate::class,
