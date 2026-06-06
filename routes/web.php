@@ -8,6 +8,13 @@ Route::get('/', function () {
 
 Route::get('/pos', \App\Livewire\PosIndex::class)->middleware('auth')->name('pos');
 
+Route::any('/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/admin/login');
+})->name('logout');
+
 Route::get('/admin/products/{product}/print-barcode', function (\App\Models\Product $product) {
     if (!auth()->check() || (!auth()->user()->hasRole('super_admin') && !auth()->user()->hasPermissionTo('view_product'))) {
         abort(403, 'Unauthorized.');
