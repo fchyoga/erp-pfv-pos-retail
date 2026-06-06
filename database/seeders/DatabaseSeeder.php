@@ -120,5 +120,19 @@ class DatabaseSeeder extends Seeder
             ]);
         }
         $cashierUser->syncRoles([$kasirRole]);
+
+        // 7. Seed default outlet admin account
+        $outletAdminUser = User::where('email', 'outlet@admin.com')->first();
+        if (!$outletAdminUser) {
+            $outletAdminUser = User::create([
+                'name' => 'Admin Outlet PFV',
+                'email' => 'outlet@admin.com',
+                'password' => Hash::make('password'),
+                'outlet_id' => $outlet->id,
+                'pin' => '222222',
+                'email_verified_at' => now(),
+            ]);
+        }
+        $outletAdminUser->syncRoles([$adminOutletRole]);
     }
 }
