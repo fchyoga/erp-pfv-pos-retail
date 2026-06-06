@@ -447,7 +447,7 @@
                     <p class="font-semibold text-sm">{{ auth()->user()->name }}</p>
                     <p class="text-primary-100 text-xs">Outlet: {{ auth()->user()->outlet?->name ?? 'Semua Outlet' }}</p>
                 </div>
-                @if(auth()->user()->hasRole('super_admin'))
+                @if(!auth()->user()->hasRole('kasir'))
                 <a href="/admin" class="bg-primary-700 hover:bg-primary-800 px-4 py-2 rounded-lg text-sm font-medium transition">
                     Dashboard Backoffice
                 </a>
