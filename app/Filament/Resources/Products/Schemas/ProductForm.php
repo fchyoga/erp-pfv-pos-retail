@@ -4,6 +4,9 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\DatePicker;
 use Filament\Schemas\Schema;
 
 class ProductForm
@@ -12,8 +15,12 @@ class ProductForm
     {
         return $schema
             ->components([
-                TextInput::make('category_id')
-                    ->numeric(),
+                Select::make('category_id')
+                    ->label('Kategori')
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 TextInput::make('name')
                     ->required(),
                 TextInput::make('sku')
@@ -30,7 +37,8 @@ class ProductForm
                     ->numeric()
                     ->default(0.0)
                     ->prefix('Rp'),
-                \Filament\Forms\Components\FileUpload::make('photo')
+                FileUpload::make('photo')
+                    ->disk('public')
                     ->image()
                     ->directory('products'),
                 TextInput::make('stock')
@@ -43,7 +51,7 @@ class ProductForm
                     ->numeric()
                     ->default(5)
                     ->required(),
-                \Filament\Forms\Components\DatePicker::make('expired_date')
+                DatePicker::make('expired_date')
                     ->label('Tanggal Kadaluarsa')
                     ->nullable(),
                 Toggle::make('is_active')

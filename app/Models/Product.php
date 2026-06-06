@@ -21,4 +21,9 @@ class Product extends Model
             ->logUnguarded()
             ->logOnlyDirty();
     }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 }
