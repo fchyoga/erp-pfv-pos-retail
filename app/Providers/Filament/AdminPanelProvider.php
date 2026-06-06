@@ -39,6 +39,7 @@ class AdminPanelProvider extends PanelProvider
                 </div>
             '))
             ->font('Outfit')
+            ->darkMode(false)
             ->assets([
                 \Filament\Support\Assets\Css::make('custom-filament-theme', asset('css/custom-filament.css')),
             ])
