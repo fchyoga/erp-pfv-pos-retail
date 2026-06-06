@@ -4,8 +4,8 @@ const CACHE_NAME = 'pfv-pos-cache-v1';
 const urlsToCache = [
   '/pos',
   '/favicon.ico',
+  '/logo.png',
   'https://cdn.tailwindcss.com',
-  'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js',
   'https://cdn.jsdelivr.net/npm/localforage@1.10.0/dist/localforage.min.js'
 ];
 

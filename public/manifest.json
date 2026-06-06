@@ -1,16 +1,36 @@
 {
-  "name": "PFV POS Retail",
+  "name": "Wisata Provit Farm Village POS",
   "short_name": "PFV POS",
-  "description": "Point of Sale for Provit Farm Village",
+  "description": "Point of Sale for Wisata Provit Farm Village",
   "start_url": "/pos",
   "display": "standalone",
-  "background_color": "#f3f4f6",
+  "orientation": "any",
+  "background_color": "#f8fafc",
   "theme_color": "#16a34a",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
