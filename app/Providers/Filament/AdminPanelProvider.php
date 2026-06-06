@@ -45,7 +45,14 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_END,
-                fn (): string => '<link rel="stylesheet" href="' . asset('css/custom-filament.css') . '?v=' . time() . '">'
+                fn (): string => '
+                    <link rel="manifest" href="' . asset('manifest.json') . '">
+                    <meta name="theme-color" content="#16a34a">
+                    <meta name="apple-mobile-web-app-capable" content="yes">
+                    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+                    <link rel="apple-touch-icon" href="' . asset('logo.png') . '">
+                    <link rel="stylesheet" href="' . asset('css/custom-filament.css') . '?v=' . time() . '">
+                '
             )
             ->navigationItems([
                 \Filament\Navigation\NavigationItem::make('POS Kasir')
