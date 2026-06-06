@@ -2,7 +2,7 @@
      id="pos-root-element"
      :class="{ 'is-printing-rekap': printingRekap }"
      data-products="{{ json_encode($products->keyBy('id')) }}"
-     class="flex flex-col md:flex-row h-full w-full relative overflow-hidden">
+     class="flex flex-col lg:flex-row h-full w-full relative overflow-hidden">
     
     <!-- Offline Indicator -->
     <div x-show="isOffline" style="display: none;" class="absolute top-0 left-0 right-0 bg-orange-500 text-white text-center py-1 text-sm font-bold z-50">
@@ -11,7 +11,7 @@
     </div>
 
     <!-- Left Panel: Products Grid -->
-    <div :class="mobileTab === 'products' ? 'flex' : 'hidden md:flex'" class="flex-1 flex-col bg-gray-50 h-full border-r border-gray-200 mt-0 md:mt-6 left-panel-ui relative w-full md:w-auto">
+    <div :class="mobileTab === 'products' ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col bg-gray-50 h-full border-r border-gray-200 mt-0 lg:mt-6 left-panel-ui relative w-full lg:w-auto">
         
         <!-- Search & Category Filter (Livewire still handles search, but we just re-render grid) -->
         <div class="p-4 bg-white shadow-sm flex gap-3 z-10">
@@ -62,22 +62,22 @@
         </div>
         
         <!-- Mobile FAB to open cart -->
-        <button @click="mobileTab = 'cart'" class="md:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 transition hover:bg-primary-700 z-40 active:scale-95 print:hidden">
+        <button @click="mobileTab = 'cart'" class="lg:hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-primary-600 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 transition hover:bg-primary-700 z-40 active:scale-95 print:hidden">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             Keranjang <span x-show="cart.length > 0" class="bg-white text-primary-600 rounded-full px-2 py-0.5 text-xs ml-1" x-text="cart.length"></span>
         </button>
     </div>
 
     <!-- Right Panel: Cart -->
-    <div :class="mobileTab === 'cart' ? 'flex' : 'hidden md:flex'" class="w-full md:w-80 lg:w-96 bg-white flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-30 md:z-20 mt-0 md:mt-6 right-panel-ui">
+    <div :class="mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'" class="w-full lg:w-96 bg-white flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-30 lg:z-20 mt-0 lg:mt-6 right-panel-ui">
         
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
             <div class="flex items-center gap-2">
-                <button @click="mobileTab = 'products'" class="md:hidden text-gray-500 hover:text-gray-800 p-1 bg-gray-200 rounded-full active:scale-95">
+                <button @click="mobileTab = 'products'" class="lg:hidden text-gray-500 hover:text-gray-800 p-1 bg-gray-200 rounded-full active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
                 <h2 class="font-bold text-gray-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-primary-500 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <svg class="w-5 h-5 text-primary-500 hidden lg:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     Pesanan
                 </h2>
             </div>
