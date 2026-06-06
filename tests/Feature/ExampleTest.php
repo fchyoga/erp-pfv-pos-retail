@@ -40,16 +40,17 @@ class ExampleTest extends TestCase
     {
         $user = \App\Models\User::factory()->create();
 
-        $reports = [
+        $urls = [
             '/admin/best-seller-report',
             '/admin/payment-summary-report',
             '/admin/profit-margin-report',
             '/admin/slow-moving-report',
             '/admin/sales-report',
+            '/admin/roles',
         ];
 
-        foreach ($reports as $reportUrl) {
-            $response = $this->actingAs($user)->get($reportUrl);
+        foreach ($urls as $url) {
+            $response = $this->actingAs($user)->get($url);
             $response->assertStatus(200);
         }
     }
