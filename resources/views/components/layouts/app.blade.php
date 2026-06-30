@@ -436,7 +436,7 @@
 <body class="bg-gray-100 font-sans antialiased text-gray-800 overflow-hidden">
     <div id="app-wrapper" class="h-screen w-screen flex flex-col">
         <!-- Top Navbar -->
-        <header class="bg-primary-600 text-white shadow-md z-10 flex items-center justify-between px-6 py-3">
+        <header x-data="{ showLogoutConfirm: false }" class="bg-primary-600 text-white shadow-md z-10 flex items-center justify-between px-6 py-3">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-primary-600 font-bold text-xl">
                     PFV
@@ -456,12 +456,83 @@
                     Dashboard Backoffice
                 </a>
                 @endif
-                <a href="{{ route('logout') }}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    Keluar
-                </a>
+
+                @php
+                    $hasActiveShift = session('has_active_shift', false);
+                    // Fallback: query DB jika session belum diset (misal pertama kali login sebelum buka /pos)
+                    if (!$hasActiveShift && auth()->check()) {
+                        $hasActiveShift = \App\Models\Shift::where('user_id', auth()->id())
+                            ->where('status', 'open')
+                            ->exists();
+                    }
+                    $isKasir = auth()->user()->hasRole('kasir');
+                @endphp
+
+                @if($isKasir && $hasActiveShift)
+                    {{-- KASIR: Shift masih aktif → tombol disabled, tidak bisa logout --}}
+                    <button
+                        type="button"
+                        title="Harap tutup shift terlebih dahulu sebelum keluar"
+                        onclick="alert('Harap tutup shift Anda terlebih dahulu di halaman POS sebelum keluar.')"
+                        class="bg-gray-500 cursor-not-allowed px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 opacity-75">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Tutup Shift Dulu
+                    </button>
+                @elseif(!$isKasir && $hasActiveShift)
+                    {{-- ADMIN: Shift masih aktif → tampilkan modal konfirmasi custom --}}
+                    <button
+                        type="button"
+                        @click="showLogoutConfirm = true"
+                        class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Keluar
+                    </button>
+
+                    {{-- Modal konfirmasi custom Alpine.js untuk admin dengan shift aktif --}}
+                    <div
+                        x-show="showLogoutConfirm"
+                        x-transition.opacity.duration.200ms
+                        class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm"
+                        style="display: none;"
+                        @keydown.escape.window="showLogoutConfirm = false">
+                        <div class="bg-white rounded-2xl shadow-2xl w-[95%] max-w-sm p-6 text-gray-800" @click.stop>
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.193 2.5 1.732 2.5z"></path></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">Shift Masih Aktif!</h3>
+                                    <p class="text-sm text-gray-500">Anda memiliki shift yang belum ditutup.</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-6">Apakah Anda ingin menutup shift terlebih dahulu sebelum keluar, atau langsung keluar tanpa menutup shift?</p>
+                            <div class="flex flex-col gap-3">
+                                <a href="/pos?open_close_shift=1"
+                                    class="w-full text-center bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 px-4 rounded-xl transition text-sm">
+                                    Tutup Shift Terlebih Dahulu
+                                </a>
+                                <a href="{{ route('logout') }}"
+                                    class="w-full text-center bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 px-4 rounded-xl border border-red-200 transition text-sm">
+                                    Keluar Tanpa Tutup Shift
+                                </a>
+                                <button type="button"
+                                    @click="showLogoutConfirm = false"
+                                    class="w-full text-center text-gray-500 hover:text-gray-700 font-medium py-2 text-sm transition">
+                                    Batal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    {{-- SEMUA ROLE: Tidak ada shift aktif → logout langsung --}}
+                    <a href="{{ route('logout') }}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Keluar
+                    </a>
+                @endif
             </div>
         </header>
+
 
         <!-- Main Content (Livewire) -->
         <main class="flex-1 overflow-hidden relative">

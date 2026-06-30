@@ -9,6 +9,16 @@ Route::get('/', function () {
 Route::get('/pos', \App\Livewire\PosIndex::class)->middleware('auth')->name('pos');
 
 Route::any('/logout', function () {
+    // Guard khusus Kasir: tidak boleh logout jika ada shift yang masih terbuka
+    if (auth()->check() && auth()->user()->hasRole('kasir')) {
+        $activeShift = \App\Models\Shift::where('user_id', auth()->id())
+            ->where('status', 'open')
+            ->first();
+        if ($activeShift) {
+            // Kembalikan ke halaman sebelumnya dengan notifikasi error
+            return redirect('/pos')->with('error', 'Harap tutup shift Anda terlebih dahulu sebelum logout!');
+        }
+    }
     auth()->logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();

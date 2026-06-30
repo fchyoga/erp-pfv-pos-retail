@@ -41,8 +41,15 @@ class PosIndex extends Component
             ->where('status', 'open')
             ->first();
 
+        // Sync shift status ke session agar header tidak perlu query DB setiap render
+        session(['has_active_shift' => (bool) $this->activeShift]);
+
         if (!$this->activeShift) {
             $this->showOpenShiftModal = true;
+        } elseif (request()->query('open_close_shift')) {
+            // Admin diarahkan ke sini untuk tutup shift sebelum logout
+            $this->calculatePaymentSummary();
+            $this->showCloseShiftModal = true;
         }
         
         // Load Default Printer
@@ -178,6 +185,7 @@ class PosIndex extends Component
         ]);
 
         $this->showOpenShiftModal = false;
+        session(['has_active_shift' => true]);
         $this->dispatch('notify', 'Shift Berhasil Dibuka!');
     }
 
@@ -228,6 +236,7 @@ class PosIndex extends Component
         $this->showOpenShiftModal = true;
         $this->startingCash = 0;
         $this->actualEndingCash = 0;
+        session(['has_active_shift' => false]);
         
         $this->dispatch('notify', 'Shift Berhasil Ditutup!');
     }

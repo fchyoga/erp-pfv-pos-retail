@@ -10,6 +10,19 @@
         <span x-show="syncQueue.length > 0" class="ml-2 bg-white text-orange-600 px-2 rounded-full text-xs" x-text="syncQueue.length + ' Menunggu Sync'"></span>
     </div>
 
+    @if(session('error'))
+    {{-- Flash error dari backend guard logout (misal kasir bypass lewat URL) --}}
+    <div
+        x-data="{ show: true }"
+        x-show="show"
+        x-init="setTimeout(() => show = false, 5000)"
+        x-transition.opacity.duration.300ms
+        class="absolute top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-lg shadow-lg font-bold flex items-center gap-2 z-[60]">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.193 2.5 1.732 2.5z"></path></svg>
+        {{ session('error') }}
+    </div>
+    @endif
+
     <!-- Left Panel: Products Grid -->
     <div :class="mobileTab === 'products' ? 'flex' : 'hidden lg:flex'" class="flex-1 flex-col bg-gray-50 h-full border-r border-gray-200 mt-0 lg:mt-6 left-panel-ui relative w-full lg:w-auto">
         
@@ -224,10 +237,26 @@
                 <button wire:click="openShift" class="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-lg shadow-md transition text-lg">
                     MULAI SHIFT
                 </button>
+
+                <div class="mt-4 border-t border-gray-100 pt-4 flex flex-col gap-2">
+                    @if(!auth()->user()->hasRole('kasir'))
+                    {{-- Hanya Admin yang bisa kembali ke dashboard tanpa buka shift --}}
+                    <a href="/admin" class="w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-xl border border-gray-200 transition text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Kembali ke Dashboard
+                    </a>
+                    @endif
+                    {{-- Semua role bisa logout dari sini setelah shift ditutup --}}
+                    <a href="{{ route('logout') }}" class="w-full text-center bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 px-4 rounded-xl border border-red-200 transition text-sm flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Keluar (Logout)
+                    </a>
+                </div>
             </div>
         </div>
     </div>
     @endif
+
 
     @if($showCloseShiftModal)
     <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm print:hidden">
